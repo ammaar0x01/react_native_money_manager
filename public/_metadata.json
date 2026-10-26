@@ -1,0 +1,17 @@
+{
+    "started": "2026-10-02",
+    "updated": "2026-10-11",
+    "status": "work-in-progress",
+    "version": "0.1", 
+
+    "technologies_used": [
+        "react native", 
+        "expo"
+    ], 
+
+    "tools_used": [
+        "gemini",
+        "vs code"
+    ]
+
+}

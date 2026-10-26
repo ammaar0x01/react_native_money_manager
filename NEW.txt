@@ -1,0 +1,29 @@
+
+New 
+- forgot-password 
+- npx expo install expo-image-picker
+- shopping folder 
+- npx expo install @react-native-async-storage/async-storage
+- npx expo install expo-sqlite (for more data)
+- 
+
+
+Modified 
+- README 
+- login.tsx 
+- signup.tsx 
+- _layout.tsx 
+- landing.tsx 
+
+- sell.tsx 
+- 
+---
+
+Notes 
+- shopping-list app
+    + (index, shopping list, repeating list, export/import data?, prices   )
+
+    Ideas 
+    - https://www.anylist.com/
+
+---
