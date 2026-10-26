@@ -87,6 +87,18 @@ Different files have different naming styles
 ---
 
 
+## More notes 
+- The 'ignore' folder, in 'app' folder, is used for experimental views/pages 
+- The only views that are visible on the mobile app is in the '(tabs)' folder (in 'app' folder)
+- Special style files:
+   + _layout.styles.ts
+   + global.styles.ts
+   + themeDefault.styles.ts
+- The '(tabs)' folder in /src/app are for the tabs in the bottom navbar for the mobile app (2-5 tabs)
+---
+
+
+
 ## Learn more
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).

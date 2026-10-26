@@ -282,7 +282,7 @@ export default function Layout() {
               }}
             >
               <Tabs.Screen
-                name="index"
+                name="(tabs)/index"
                 options={{
                   title: 'Home',
                   tabBarIcon: ({ color }) => (
@@ -291,9 +291,18 @@ export default function Layout() {
                 }}
               />
 
+      {/* <Tabs.Screen
+                name="(tabs)/search"
+                options={{
+                  title: 'Search',
+                  tabBarIcon: ({ color }) => (
+                    <Ionicons name="search" size={26} color={color} />
+                  ),
+                }}
+              /> */}
 
                    <Tabs.Screen
-                name="shop"
+                name="(tabs)/shopping"
                 options={{
                   title: 'Shop',
                   tabBarIcon: ({ color }) => (
@@ -329,20 +338,14 @@ export default function Layout() {
                 }}
               /> */}
 
-               <Tabs.Screen
-                name="search"
-                options={{
-                  title: 'Search',
-                  tabBarIcon: ({ color }) => (
-                    <Ionicons name="search" size={26} color={color} />
-                  ),
-                }}
-              />
+         
           
             {/* Hidden auxiliary screens so they don't generate bottom tab buttons */}
-              <Tabs.Screen name="cart" options={{ href: null }} />
+              <Tabs.Screen name="landing" options={{ href: null }} />
+              <Tabs.Screen name="(tabs)/search" options={{ href: null }} />
+
               {/* <Tabs.Screen name="search" options={{ href: null }} /> */}
-              <Tabs.Screen name="search1" options={{ href: null }} />
+              {/* <Tabs.Screen name="search1" options={{ href: null }} />
 
               <Tabs.Screen name="p" options={{ href: null }} />
               <Tabs.Screen name="landing" options={{ href: null }} />
@@ -353,7 +356,7 @@ export default function Layout() {
               <Tabs.Screen name="(auth)/login" options={{ href: null }} />
               <Tabs.Screen name="(auth)/login1" options={{ href: null }} />
               <Tabs.Screen name="(auth)/signup" options={{ href: null }} />
-              <Tabs.Screen name="(auth)/forgot-password" options={{ href: null }} />
+              <Tabs.Screen name="(auth)/forgot-password" options={{ href: null }} /> */}
 
             </Tabs>
 

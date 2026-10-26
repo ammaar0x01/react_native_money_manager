@@ -1,5 +1,3 @@
-// index.style.ts //
-
 import { StyleSheet } from "react-native";
 
 

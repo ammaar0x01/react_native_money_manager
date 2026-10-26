@@ -52,7 +52,11 @@ const INITIAL_LISTS: SavedShoppingList[] = [
   }
 ];
 
-export default function ShoppingListsManagerView() {
+// export default function ShoppingListsManagerView() {
+
+// export default function ShoppingListView() {
+
+export default function ShoppingView() {
   const [lists, setLists] = useState<SavedShoppingList[]>(INITIAL_LISTS);
   const [activeListId, setActiveListId] = useState<string>(INITIAL_LISTS[0].id);
   

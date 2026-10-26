@@ -1,67 +1,55 @@
-// /*
-// global.styles.ts 
-// ================
-// */
+/*
+global.styles.ts 
+================
+*/
 
-// /*
-// Prompt for a chatbot
-// --------------------
+import { TextStyle } from "react-native";
+import { ColorsThemeDefault } from "./themeDefault.styles";
+// -----------------------------------
 
-// (copy the code below to use as reference)
-// */
+// --- Change the theme here --- 
+export const themeName = ColorsThemeDefault
+
+// --- SETUP ---
+const backgroundColor = themeName.background
+const textColor = themeName.text
+const pageHeadingColor = themeName.pageHeading 
+const pageSubheadingColor = themeName.pageSubheading 
+// --------------------------------------
 
 
-// export const Colors = {
-//   background: "#121212",
-//   surface: "#FFFFFF",
-//   primary: "#E59400",
-//   textPrimary: "#111827",
-//   textSecondary: "#6B7280",
-// };
+export const GlobalStyles = {
+  // === PAGE LAYOUT ===
+  mainContainer: {
+    flex: 1,
+    backgroundColor: backgroundColor, 
+    textColor: textColor, 
+    padding: 40,
+    paddingBottom: 0,
+    paddingTop: 0,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    paddingTop: 40,
+  },
+  contentWrapper: {
+    width: "100%",
+    alignSelf: "center",
+  },
+  contentWrapperDesktop: {
+    maxWidth: 700,
+  },
 
-// export const Spacing = {
-//   sm: 8,
-//   md: 16,
-//   lg: 24,
-//   xl: 32,
-// };
-
-// // === GLOBAL =======================================
-// const globalStyles = {
-//   outerContainer: {
-//     flex: 1,
-//     backgroundColor: "#FFE8B6",
-//     // padding: 16,
-//     padding: 40,
-//   },
-//   scrollContent: {
-//     paddingBottom: 40,
-//   },
-// };
-
-// export const Shadows = {
-//   card: {
-//     elevation: 4,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 4 },
-//     shadowOpacity: 0.12,
-//     shadowRadius: 8,
-//   },
-// };
-
-// // === THEME 1 =======================================
-// const colorInfoForTheme1 = {
-//   backgroundColor: "#ffffff",
-//   textColor: "#000000",
-//   color1: "#E59400",
-//   color2: "#D97706",
-//   color3: "#3500e5",
-
-//   backgroundColorBottomNav: "#000000",
-//   textColorBottomNav: "#ffffff",
-
-//   backgroundColorTopAndSideNav: "#000000",
-//   textColorTopAndSideNav: "#ffffff",
-// };
-
-// // === THEME 2 =======================================
+  // === HEADER ===
+  pageTitle: {
+    fontSize: 44,
+    fontWeight: "800" as TextStyle["fontWeight"],
+    color: pageHeadingColor, 
+    marginBottom: 20,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: pageSubheadingColor, 
+    marginTop: 4,
+  } as const,
+};
