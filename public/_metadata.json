@@ -1,6 +1,9 @@
 {
-    "started": "2026-10-02",
-    "updated": "2026-10-11",
+    "app_name": "Money Manager", 
+    "app_type": "cross-platform; (Web-app and Mobile-app)",
+    
+    "started": "2026-10-29",
+    "updated": "2026-10-29",
     "status": "work-in-progress",
     "version": "0.1", 
 
@@ -10,8 +13,8 @@
     ], 
 
     "tools_used": [
-        "gemini",
-        "vs code"
+        "Visual Studio Code", 
+        "https://gemini.google.com/app",
+        "https://opencode.ai/" 
     ]
-
 }

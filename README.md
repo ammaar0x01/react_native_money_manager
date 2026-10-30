@@ -1,7 +1,7 @@
-# Shopping List
-- Started: 2026-10-26
-- Updated: 2026-10-27
-- Version: 0.2.1
+# Money Manager
+- Started: 2026-10-29
+- Updated: 2026-10-29
+- Version: 0.1
 - Status: work-in-progress
 ---
 

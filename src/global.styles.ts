@@ -35,6 +35,8 @@ export const GlobalStyles = {
   contentWrapper: {
     width: "100%",
     alignSelf: "center",
+    maxWidth: 900,
+
   },
   contentWrapperDesktop: {
     maxWidth: 700,

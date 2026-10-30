@@ -17,10 +17,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { GlobalStyles } from '@/global.styles';
-// import '@/global.css'
+// import { SafeAreaView } from 'react-native-safe-area-context';
 
+// import { GlobalStyles } from '@/global.styles';
+import { stylesNotes as styles } from '@/styles/notes.styles';
+// ----------------------------------------------
 
 const STORAGE_KEY = '@notes_app_data';
 
@@ -159,12 +160,19 @@ export default function NotesScreen() {
           // style={styles.outerContainer}
         >
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.contentWrapper}>
             
 
 
       {/* Header */}
       <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>My Notes</Text>
+      <View>
+  <Text style={styles.headerTitle}>My Notes</Text>
+<Text style={styles.headerSubtitle}>
+                Add notes related to your budget and spendings.
+              </Text>
+
+      </View>
 
         {/* <Text style={styles.headerTitle} className='jim-nightshade-regular'>My Notes</Text> */}
         <Text style={styles.noteCount}>{notes.length} notes</Text>
@@ -285,294 +293,9 @@ export default function NotesScreen() {
       </Modal>
 
     {/* </SafeAreaView> */}
+    </View>
     </ScrollView> 
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  //  outerContainer: {
-  //   flex: 1,
-  //   backgroundColor: '#F9FAFB',
-  //   paddingTop: 30, // Increased top padding for the header
-  // },
-
-  // outerContainer: {
-  //   flex: 1,
-  //   backgroundColor: '#f8f9fa',
-  //   // paddingTop: 30,
-  //   // padding: 20,
-  //   // paddingTop: 40,
-  //   paddingHorizontal: 20,
-
-
-  // },
-  //   scrollContent: {
-  //   // paddingBottom: 40,
-  // },
-
-
-    // === LAYOUT 
-    outerContainer: GlobalStyles.mainContainer, 
-  
-    scrollContent: GlobalStyles.scrollContent,  
-
-  // === HEADER 
-  // headerContainer: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   alignItems: 'baseline',
-  //   // paddingHorizontal: 20,
-  //   // paddingTop: 16,
-  //   // paddingBottom: 8,
-
-  //   // paddingTop: 10,
-
-  //    marginBottom: 20,
-  //   paddingTop: 50,
-  //   paddingBottom: 6,
-  // },
-  // headerTitle: {
-  //   // fontSize: 34,
-  //   // Handwritten font applied across platforms (Fallback stack included)
-  //   // fontFamily: Platform.select({
-  //   //   ios: 'Savoye LET', 
-  //   //   android: 'cursive',
-  //   //   web: 'Caveat, "Comic Sans MS", cursive',
-  //   // }),
-
-  //   // fontSize: 36,
-  //   // fontFamily: 'Caveat', // Will now match and render the handwritten font on web and mobile!
- 
-
-  //   // fontWeight: 'bold',
-  //   // color: '#1a1a1a',
-
-
-  //   fontSize: 42,
-
-  //   fontWeight: '500',
-  //   // fontFamily: 'serif', 
-  //   color: '#111827',
-  //   letterSpacing: -1, 
-
-  // },
-
-
-  headerContainer: GlobalStyles.headerContainer, 
-
-    headerTitle: GlobalStyles.pageHeading, 
-
-  headerSubtitle: GlobalStyles.pageSubheading, 
-
-
-  //  headerContainer: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   alignItems: 'center',
-  //   marginBottom: 20,
-  //   // paddingTop: 50,
-  //   paddingTop: 20,
-
-  //   paddingBottom: 6,
-  // },
-  // headerTitle: {
-  //   // fontSize: 34,
-  //   fontSize: 42,
-
-  //   fontWeight: '700',
-  //   // fontFamily: 'serif', 
-  //   color: '#111827',
-  //   letterSpacing: -1, 
-
-  // },
-
-  noteCount: {
-    fontSize: 14,
-    color: '#666',
-  },
-
-  // ---search 
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    
-    // marginHorizontal: 20,
-    marginVertical: 10,
-    
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    // padding: 0,
-    padding: 10, 
-    outlineStyle: 'none',
-  } as any,
-
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 80,
-    paddingTop: 5,
-  },
-  noteCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  noteContentContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  noteTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#222',
-    marginBottom: 4,
-  },
-  noteSnippet: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  noteDate: {
-    fontSize: 11,
-    color: '#999',
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 50,
-  },
-  emptyText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#888',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    // backgroundColor: '#007AFF',
-    backgroundColor: '#1aaa00',
-
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-
-  // --- MODAL
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    height: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    padding:10, 
-
-  },
-  modalHeaderTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-  },
-  inputTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#222',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingBottom: 8,
-    marginBottom: 15,
-    padding:10, 
-  },
-  inputBody: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    textAlignVertical: 'top',
-    marginBottom: 20,
-    padding:10, 
-    borderWidth: 0,
-
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#f1f2f6',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    color: '#555',
-    fontWeight: '600',
-  },
-  saveButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
-  },
-});
 

@@ -1,534 +1,729 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  ScrollView, 
-  Pressable, 
-  Image,
-  StyleSheet, 
-  KeyboardAvoidingView, 
-  Platform,
-  useWindowDimensions,
+import React, { useCallback, useMemo, useState } from "react";
+import {
   Alert,
-  Modal 
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "expo-router";
 
-import { GlobalStyles } from '@/global.styles';
-// ----------------------------------------------
+import { stylesIndex as styles } from "@/styles/index.styles";
+// ----------------------------------
 
+const EXPENSES_STORAGE_KEY = "@expenses_storage";
+const BUDGET_STORAGE_KEY = "@expenses_monthly_budget";
+const CURRENCY_STORAGE_KEY = "@app_currency_setting";
+const DEFAULT_MONTHLY_BUDGET = 5000;
 
-interface ShoppingItem {
-  id: string;
-  name: string;
-  price: string;
-  image: string;
-  completed: boolean;
-  category: string;
+type CategoryKey =
+  | "Food"
+  | "Transport"
+  | "Shopping"
+  | "Bills"
+  | "Health"
+  | "Entertainment"
+  | "Other";
+
+type CategoryFilter = CategoryKey | "All";
+
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
+interface CategoryMeta {
+  key: CategoryKey;
+  label: string;
+  icon: IconName;
+  color: string;
+  background: string;
 }
 
-interface SavedShoppingList {
+interface Expense {
   id: string;
-  name: string;
-  items: ShoppingItem[];
+  title: string;
+  amount: number;
+  category: CategoryKey;
+  date: string;
+  note?: string;
 }
 
-const STORAGE_KEY = '@shopping_lists_storage';
-
-const INITIAL_LISTS: SavedShoppingList[] = [
+const CATEGORIES: CategoryMeta[] = [
+  { key: "Food", label: "Food", icon: "fast-food-outline", color: "#B45309", background: "#FEF3C7" },
+  { key: "Transport", label: "Transport", icon: "car-outline", color: "#1D4ED8", background: "#DBEAFE" },
+  { key: "Shopping", label: "Shopping", icon: "bag-handle-outline", color: "#BE185D", background: "#FCE7F3" },
+  { key: "Bills", label: "Bills", icon: "receipt-outline", color: "#6D28D9", background: "#EDE9FE" },
+  { key: "Health", label: "Health", icon: "medkit-outline", color: "#047857", background: "#D1FAE5" },
   {
-    id: 'list-1',
-    name: 'Tech & Gadgets',
-    items: [
-      { 
-        id: '1', 
-        name: 'Acer Aspire Gaming Laptop', 
-        price: 'R 6,499', 
-        image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
-        completed: false, 
-        category: 'Computers' 
-      },
-    ]
-  }
+    key: "Entertainment",
+    label: "Fun",
+    icon: "game-controller-outline",
+    color: "#B91C1C",
+    background: "#FEE2E2",
+  },
+  { key: "Other", label: "Other", icon: "pricetag-outline", color: "#374151", background: "#F3F4F6" },
 ];
 
-export default function ShoppingView() {
-  const [lists, setLists] = useState<SavedShoppingList[]>(INITIAL_LISTS);
-  const [activeListId, setActiveListId] = useState<string>(INITIAL_LISTS[0].id);
-  
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  ZAR: "R",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  AUD: "A$",
+  CAD: "C$",
+  INR: "₹",
+  JPY: "¥",
+  CNY: "¥",
+  BRL: "R$",
+  MXN: "$",
+  NZD: "NZ$",
+  CHF: "CHF",
+  SGD: "S$",
+};
 
-  // New List Form State
-  const [showNewListInput, setShowNewListInput] = useState(false);
-  const [newListName, setNewListName] = useState('');
+const getCategoryMeta = (key: CategoryKey): CategoryMeta =>
+  CATEGORIES.find((category) => category.key === key) ?? CATEGORIES[CATEGORIES.length - 1];
 
-  // Modal State for Adding Item
-  const [addItemModalVisible, setAddItemModalVisible] = useState(false);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemPrice, setNewItemPrice] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState('General');
-  const [newItemImage, setNewItemImage] = useState('');
+const toDateInput = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
+const getTodayInput = () => toDateInput(new Date());
+
+const getRelativeDate = (offset: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return toDateInput(date);
+};
+
+const formatAmount = (amount: number): string => {
+  const [whole, decimals] = Math.abs(amount).toFixed(2).split(".");
+  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${decimals}`;
+};
+
+const formatCompactAmount = (amount: number): string =>
+  Math.round(Math.abs(amount))
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+const formatDateLabel = (isoDate: string): string => {
+  if (isoDate === getTodayInput()) return "Today";
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isoDate === toDateInput(yesterday)) return "Yesterday";
+
+  const parsed = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return isoDate;
+
+  return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
+
+const SEED_EXPENSES: Expense[] = [
+  {
+    id: "seed-1",
+    title: "Weekly groceries",
+    amount: 842.5,
+    category: "Food",
+    date: getRelativeDate(0),
+    note: "Pick n Pay",
+  },
+  {
+    id: "seed-2",
+    title: "Fuel top-up",
+    amount: 650,
+    category: "Transport",
+    date: getRelativeDate(-1),
+  },
+  {
+    id: "seed-3",
+    title: "Internet bill",
+    amount: 799,
+    category: "Bills",
+    date: getRelativeDate(-2),
+  },
+  {
+    id: "seed-4",
+    title: "Running shoes",
+    amount: 1299.99,
+    category: "Shopping",
+    date: getRelativeDate(-4),
+    note: "End-of-season sale",
+  },
+  {
+    id: "seed-5",
+    title: "Movie night",
+    amount: 240,
+    category: "Entertainment",
+    date: getRelativeDate(-6),
+  },
+];
+
+export default function ExpensesView() {
   const { width } = useWindowDimensions();
   const horizontalPadding = width >= 768 ? 40 : 20;
 
-  useEffect(() => {
-    loadStoredLists();
-  }, []);
+  const [expenses, setExpenses] = useState<Expense[]>(SEED_EXPENSES);
+  const [monthlyBudget, setMonthlyBudget] = useState<number>(DEFAULT_MONTHLY_BUDGET);
+  const [currencySymbol, setCurrencySymbol] = useState<string>("R");
 
-  const loadStoredLists = async () => {
-    try {
-      const storedData = await AsyncStorage.getItem(STORAGE_KEY);
-      if (storedData) {
-        const parsedLists: SavedShoppingList[] = JSON.parse(storedData);
-        if (parsedLists && parsedLists.length > 0) {
-          setLists(parsedLists);
-          setActiveListId(parsedLists[0].id);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>("All");
+
+  const [addModalVisible, setAddModalVisible] = useState<boolean>(false);
+  const [newTitle, setNewTitle] = useState<string>("");
+  const [newAmount, setNewAmount] = useState<string>("");
+  const [newCategory, setNewCategory] = useState<CategoryKey>("Food");
+  const [newDate, setNewDate] = useState<string>(getTodayInput());
+  const [newNote, setNewNote] = useState<string>("");
+
+  const [budgetModalVisible, setBudgetModalVisible] = useState<boolean>(false);
+  const [budgetInput, setBudgetInput] = useState<string>(String(DEFAULT_MONTHLY_BUDGET));
+
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+
+      const loadData = async () => {
+        try {
+          const [storedExpenses, storedBudget, storedCurrency] = await Promise.all([
+            AsyncStorage.getItem(EXPENSES_STORAGE_KEY),
+            AsyncStorage.getItem(BUDGET_STORAGE_KEY),
+            AsyncStorage.getItem(CURRENCY_STORAGE_KEY),
+          ]);
+
+          if (!mounted) return;
+
+          if (storedExpenses) {
+            const parsed = JSON.parse(storedExpenses) as Expense[];
+            if (Array.isArray(parsed)) {
+              setExpenses(parsed);
+            }
+          } else {
+            setExpenses(SEED_EXPENSES);
+            await AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(SEED_EXPENSES));
+          }
+
+          if (storedBudget) {
+            const parsedBudget = Number(storedBudget);
+            if (Number.isFinite(parsedBudget) && parsedBudget > 0) {
+              setMonthlyBudget(parsedBudget);
+              setBudgetInput(String(parsedBudget));
+            }
+          }
+
+          if (storedCurrency) {
+            setCurrencySymbol(CURRENCY_SYMBOLS[storedCurrency] ?? "R");
+          } else {
+            setCurrencySymbol("R");
+          }
+        } catch (error) {
+          console.error("Failed to load expense data", error);
         }
-      } else {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_LISTS));
-      }
-    } catch (error) {
-      console.error('Failed to load shopping lists offline', error);
-    }
-  };
+      };
 
-  const saveListsToStorage = async (updatedLists: SavedShoppingList[]) => {
-    try {
-      setLists(updatedLists);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLists));
-    } catch (error) {
-      console.error('Failed to save shopping lists offline', error);
-    }
-  };
+      loadData();
 
-  const activeList = lists.find((l) => l.id === activeListId) || lists[0];
-
-  const handleTakePhoto = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("Permission Denied", "Camera access is required to take product photos.");
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setNewItemImage(result.assets[0].uri);
-    }
-  };
-
-  const handlePickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("Permission Denied", "Media library access is required to upload product photos.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setNewItemImage(result.assets[0].uri);
-    }
-  };
-
-  const handleCreateNewList = () => {
-    if (!newListName.trim()) return;
-    const newList: SavedShoppingList = {
-      id: Date.now().toString(),
-      name: newListName.trim(),
-      items: [],
-    };
-    const updatedLists = [...lists, newList];
-    saveListsToStorage(updatedLists);
-    setActiveListId(newList.id);
-    setNewListName('');
-    setShowNewListInput(false);
-  };
-
-  const handleDeleteList = (listId: string) => {
-    if (lists.length <= 1) return;
-    const updatedLists = lists.filter((l) => l.id !== listId);
-    saveListsToStorage(updatedLists);
-    if (activeListId === listId) {
-      setActiveListId(updatedLists[0].id);
-    }
-  };
-
-  const handleAddItem = () => {
-    if (!newItemName.trim()) {
-      Alert.alert('Validation', 'Please enter a product name.');
-      return;
-    }
-    
-    const formattedPrice = newItemPrice.trim() 
-      ? (newItemPrice.startsWith('R') ? newItemPrice.trim() : `R ${newItemPrice.trim()}`) 
-      : 'R 0.00';
-
-    const newItem: ShoppingItem = {
-      id: Date.now().toString(),
-      name: newItemName.trim(),
-      price: formattedPrice,
-      image: newItemImage.trim() ? newItemImage.trim() : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
-      completed: false,
-      category: newItemCategory.trim() || 'General',
-    };
-
-    const updatedLists = lists.map((l) => {
-      if (l.id === activeListId) {
-        return { ...l, items: [newItem, ...l.items] };
-      }
-      return l;
-    });
-
-    saveListsToStorage(updatedLists);
-    
-    // Reset and close modal
-    setNewItemName('');
-    setNewItemPrice('');
-    setNewItemCategory('General');
-    setNewItemImage('');
-    setAddItemModalVisible(false);
-  };
-
-  const handleToggleItem = (itemId: string) => {
-    const updatedLists = lists.map((l) => {
-      if (l.id === activeListId) {
-        const updatedItems = l.items.map((item) =>
-          item.id === itemId ? { ...item, completed: !item.completed } : item
-        );
-        return { ...l, items: updatedItems };
-      }
-      return l;
-    });
-    saveListsToStorage(updatedLists);
-  };
-
-  const handleDeleteItem = (itemId: string) => {
-    const updatedLists = lists.map((l) => {
-      if (l.id === activeListId) {
-        return { ...l, items: l.items.filter((item) => item.id !== itemId) };
-      }
-      return l;
-    });
-    saveListsToStorage(updatedLists);
-  };
-
-  const filteredItems = activeList.items.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      return () => {
+        mounted = false;
+      };
+    }, [])
   );
 
-  const completedCount = activeList.items.filter((i) => i.completed).length;
-  const totalCount = activeList.items.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const notify = (title: string, message: string) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  const persistExpenses = async (nextExpenses: Expense[]) => {
+    setExpenses(nextExpenses);
+    try {
+      await AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(nextExpenses));
+    } catch (error) {
+      console.error("Failed to save expenses", error);
+    }
+  };
+
+  const totalSpent = useMemo(
+    () => expenses.reduce((sum, expense) => sum + expense.amount, 0),
+    [expenses]
+  );
+
+  const currentMonthKey = getTodayInput().slice(0, 7);
+  const monthSpent = useMemo(
+    () =>
+      expenses
+        .filter((expense) => expense.date.startsWith(currentMonthKey))
+        .reduce((sum, expense) => sum + expense.amount, 0),
+    [expenses, currentMonthKey]
+  );
+
+  const budgetPercent = monthlyBudget > 0 ? Math.round((monthSpent / monthlyBudget) * 100) : 0;
+  const isOverBudget = monthSpent > monthlyBudget;
+  const remainingBudget = Math.max(monthlyBudget - monthSpent, 0);
+
+  const categoryTotals = useMemo(
+    () =>
+      CATEGORIES.map((category) => ({
+        ...category,
+        total: expenses
+          .filter((expense) => expense.category === category.key)
+          .reduce((sum, expense) => sum + expense.amount, 0),
+      }))
+        .filter((category) => category.total > 0)
+        .sort((a, b) => b.total - a.total),
+    [expenses]
+  );
+
+  const visibleExpenses = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return expenses
+      .filter((expense) => activeCategory === "All" || expense.category === activeCategory)
+      .filter((expense) => {
+        if (!query) return true;
+        return (
+          expense.title.toLowerCase().includes(query) ||
+          expense.category.toLowerCase().includes(query) ||
+          (expense.note ?? "").toLowerCase().includes(query)
+        );
+      })
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  }, [expenses, searchQuery, activeCategory]);
+
+  const openAddModal = () => {
+    setNewTitle("");
+    setNewAmount("");
+    setNewCategory("Food");
+    setNewDate(getTodayInput());
+    setNewNote("");
+    setAddModalVisible(true);
+  };
+
+  const handleAddExpense = () => {
+    const title = newTitle.trim();
+    const parsedAmount = Number(newAmount.replace(",", ".").trim());
+    const date = newDate.trim();
+
+    if (!title) {
+      notify("Missing details", "Please enter what you spent on.");
+      return;
+    }
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      notify("Invalid amount", "Please enter an amount greater than zero.");
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      notify("Invalid date", "Please use the YYYY-MM-DD format, for example 2026-10-29.");
+      return;
+    }
+
+    const newExpense: Expense = {
+      id: `${Date.now()}`,
+      title,
+      amount: parsedAmount,
+      category: newCategory,
+      date,
+      note: newNote.trim() || undefined,
+    };
+
+    persistExpenses([newExpense, ...expenses]);
+    setAddModalVisible(false);
+  };
+
+  const handleDeleteExpense = (expense: Expense) => {
+    const removeExpense = () => {
+      persistExpenses(expenses.filter((item) => item.id !== expense.id));
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm(`Delete "${expense.title}"?`)) {
+        removeExpense();
+      }
+      return;
+    }
+
+    Alert.alert("Delete expense", `Remove "${expense.title}" from your expenses?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: removeExpense },
+    ]);
+  };
+
+  const openBudgetModal = () => {
+    setBudgetInput(String(monthlyBudget));
+    setBudgetModalVisible(true);
+  };
+
+  const handleSaveBudget = async () => {
+    const parsedBudget = Number(budgetInput.replace(",", ".").trim());
+
+    if (!Number.isFinite(parsedBudget) || parsedBudget <= 0) {
+      notify("Invalid budget", "Please enter a monthly budget greater than zero.");
+      return;
+    }
+
+    setMonthlyBudget(parsedBudget);
+    setBudgetModalVisible(false);
+
+    try {
+      await AsyncStorage.setItem(BUDGET_STORAGE_KEY, String(parsedBudget));
+    } catch (error) {
+      console.error("Failed to save budget", error);
+    }
+  };
+
+  const renderCategoryIcon = (category: CategoryKey, size = 20) => {
+    const meta = getCategoryMeta(category);
+    return (
+      <View style={[styles.categoryIconWrap, { backgroundColor: meta.background }]}>
+        <Ionicons name={meta.icon} size={size} color={meta.color} />
+      </View>
+    );
+  };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={[styles.outerContainer, { paddingHorizontal: horizontalPadding }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Shopping Lists</Text>
-            <Text style={styles.headerSubtitle}>Manage your saved lists & track items offline.</Text>
-          </View>
+        <View style={styles.contentWrapper}>
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <View style={styles.headerTextGroup}>
+              <Text style={styles.headerTitle}>Expenses</Text>
+              <Text style={styles.headerSubtitle}>
+                Track where your money goes, one expense at a time.
+              </Text>
+            </View>
 
-          {/* <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={20} color="#E59400" />
-          </Pressable> */}
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search items in this list..."
-            placeholderTextColor="#9CA3AF"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-            </Pressable>
-          )}
-        </View>
-
-        {/* === Saved Lists Selector Bar */}
-        <View style={styles.savedListsSection}>
-          <View style={styles.savedListsHeaderRow}>
-            <Text style={styles.sectionLabel}>Your Lists ({lists.length})</Text>
-            <Pressable 
-              style={styles.newListTrigger} 
-              onPress={() => setShowNewListInput(!showNewListInput)}
-            >
-              <Ionicons name={showNewListInput ? "close" : "add"} size={14} color="#E59400" />
-              <Text style={styles.newListTriggerText}>{showNewListInput ? "Cancel" : "New List"}</Text>
+            <Pressable style={styles.headerAddButton} onPress={openAddModal}>
+              <Ionicons name="add" size={20} color="#FFFFFF" />
+              <Text style={styles.headerAddButtonText}>Add</Text>
             </Pressable>
           </View>
 
-          {showNewListInput && (
-            <View style={styles.newListForm}>
-              <TextInput
-                style={[styles.textInput, { flex: 1, marginBottom: 0, marginRight: 8 }]}
-                placeholder="List Name (e.g. Groceries)"
-                placeholderTextColor="#9CA3AF"
-                value={newListName}
-                onChangeText={setNewListName}
-                onSubmitEditing={handleCreateNewList}
-              />
-              <Pressable style={styles.createListButton} onPress={handleCreateNewList}>
-                <Text style={styles.createListButtonText}>Save List</Text>
+          {/* Summary */}
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryTopRow}>
+              <Text style={styles.summaryLabel}>TOTAL SPENT</Text>
+              <Pressable style={styles.budgetEditButton} onPress={openBudgetModal}>
+                <Ionicons name="options-outline" size={14} color="#D1FAE5" />
+                <Text style={styles.budgetEditText}>Budget</Text>
               </Pressable>
             </View>
-          )}
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} 
-          style={styles.listsScrollRow}>
-            {lists.map((list) => {
-              const isActive = list.id === activeListId;
+            <Text style={styles.summaryAmount}>
+              {currencySymbol} {formatAmount(totalSpent)}
+            </Text>
+
+            <View style={styles.summaryStatsRow}>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>
+                  {currencySymbol} {formatCompactAmount(monthSpent)}
+                </Text>
+                <Text style={styles.summaryStatLabel}>This month</Text>
+              </View>
+
+              <View style={styles.summaryDivider} />
+
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{expenses.length}</Text>
+                <Text style={styles.summaryStatLabel}>Transactions</Text>
+              </View>
+
+              <View style={styles.summaryDivider} />
+
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>
+                  {currencySymbol} {formatCompactAmount(monthlyBudget)}
+                </Text>
+                <Text style={styles.summaryStatLabel}>Budget</Text>
+              </View>
+            </View>
+
+            <View style={styles.budgetRow}>
+              <Text style={styles.budgetText}>{budgetPercent}% of monthly budget used</Text>
+              <Text style={styles.budgetText}>
+                {isOverBudget
+                  ? `${currencySymbol} ${formatAmount(monthSpent - monthlyBudget)} over`
+                  : `${currencySymbol} ${formatAmount(remainingBudget)} left`}
+              </Text>
+            </View>
+
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${Math.min(Math.max(budgetPercent, 0), 100)}%` as `${number}%`,
+                    backgroundColor: isOverBudget ? "#EF4444" : "#95F376",
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* Search */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search expenses..."
+              placeholderTextColor="#9CA3AF"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+              </Pressable>
+            )}
+          </View>
+
+          {/* Category filters */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.chipsScroll}
+            contentContainerStyle={styles.chipsRow}
+          >
+            <Pressable
+              style={[styles.chip, activeCategory === "All" && styles.chipActive]}
+              onPress={() => setActiveCategory("All")}
+            >
+              <Text style={[styles.chipText, activeCategory === "All" && styles.chipTextActive]}>
+                All
+              </Text>
+            </Pressable>
+
+            {CATEGORIES.map((category) => {
+              const isActive = activeCategory === category.key;
               return (
                 <Pressable
-                  key={list.id}
-                  style={[styles.listPill, isActive && styles.listPillActive]}
-                  onPress={() => setActiveListId(list.id)}
+                  key={category.key}
+                  style={[styles.chip, isActive && styles.chipActive]}
+                  onPress={() => setActiveCategory(category.key)}
                 >
-                  {/* <Ionicons 
-                    name={isActive ? "folder-open" : "folder-outline"} 
-                    size={14} 
-                    color={isActive ? "#FFFFFF" : "#4B5563"} 
-                    style={{ marginRight: 6 }}
-                  /> */}
-                  <Text style={[styles.listPillText, isActive && styles.listPillTextActive]}>
-                    {list.name} ({list.items.length})
+                  <Ionicons
+                    name={category.icon}
+                    size={15}
+                    color={isActive ? "#FFFFFF" : category.color}
+                  />
+                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                    {category.label}
                   </Text>
-                  
-                  {lists.length > 1 && (
-                    <Pressable 
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleDeleteList(list.id);
-                      }}
-                      style={styles.deleteListIcon}
-                    >
-                      <Ionicons name="close-circle" size={14} color={isActive ? "#FDE68A" : "#9CA3AF"} />
-                    </Pressable>
-                  )}
                 </Pressable>
               );
             })}
           </ScrollView>
-        </View>
 
-        {/* === Progress Card & Trigger to open Add Item Modal */}
-        <View style={styles.progressCardContainer}>
-          <View style={styles.progressCard}>
-            <View style={styles.progressInfo}>
-              <Text style={styles.selectedListTitle}>{activeList.name}</Text>
-              <Text style={styles.progressCount}>{completedCount} of {totalCount} items purchased</Text>
-            </View>
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{progressPercent}%</Text>
-            </View>
-          </View>
+          {/* Spending by category */}
+          {categoryTotals.length > 0 && (
+            <View style={styles.breakdownCard}>
+              <View style={styles.breakdownHeaderRow}>
+                <Text style={styles.sectionTitle}>Spending by category</Text>
+                <Text style={styles.sectionHint}>All time</Text>
+              </View>
 
-          <Pressable 
-            style={styles.openModalButton} 
-            onPress={() => setAddItemModalVisible(true)}
-          >
-            {/* <Ionicons name="add-circle" size={20} color="#FFFFFF" style={{ marginRight: 6 }} /> */}
-            <Text style={styles.openModalButtonText}>Add New Item</Text>
-          </Pressable>
-        </View>
-
-        {/* === Items List (Responsive Grid for Web) */}
-        <View style={styles.listSection}>
-          <Text style={styles.formSectionTitle}>Items in this List ({filteredItems.length})</Text>
-
-          {filteredItems.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="cart-outline" size={48} color="#D1D5DB" />
-              <Text style={styles.emptyText}>
-                {searchQuery ? 'No matching items found.' : 'This list is currently empty.'}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.gridContainer}>
-              {filteredItems.map((item) => {
-                // Determine card width based on screen width
-                let cardWidth = '100%'; // Mobile default (1 per row)
-                if (width >= 1024) {
-                  cardWidth = '32%'; // 3 items per row on wider screens
-                } else if (width >= 768) {
-                  cardWidth = '48%'; // 2 items per row on tablets / smaller web screens
-                }
+              {categoryTotals.map((category) => {
+                const maxTotal = categoryTotals[0]?.total || 1;
+                const barWidth = Math.max((category.total / maxTotal) * 100, 4);
 
                 return (
-                  <Pressable
-                    key={item.id}
-                    style={[
-                      styles.todoCard, 
-                      { width: cardWidth as any },
-                      item.completed && styles.todoCardCompleted
-                    ]}
-                    onPress={() => handleToggleItem(item.id)}
-                  >
-                    {/* Checkbox */}
-                    <View style={[styles.checkbox, item.completed && styles.checkboxChecked]}>
-                      {item.completed && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-                    </View>
-
-                    {/* Product Thumbnail */}
-                    <Image source={{ uri: item.image }} style={styles.productThumbnail} resizeMode="cover" />
-
-                    {/* Item Details */}
-                    <View style={styles.itemDetails}>
-                      <Text 
-                        style={[styles.itemName, item.completed && styles.itemNameCompleted]} 
-                        numberOfLines={1}
-                      >
-                        {item.name}
+                  <View key={category.key} style={styles.breakdownRow}>
+                    <View style={styles.breakdownLabelRow}>
+                      <Text style={styles.breakdownLabel}>{category.label}</Text>
+                      <Text style={styles.breakdownValue}>
+                        {currencySymbol} {formatAmount(category.total)}
                       </Text>
-                      <View style={styles.itemMetaRow}>
-                        <Text style={styles.itemCategory}>{item.category}</Text>
-                        <Text style={styles.itemPrice}>{item.price}</Text>
-                      </View>
                     </View>
-
-                    {/* Delete Button */}
-                    <Pressable 
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleDeleteItem(item.id);
-                      }} 
-                      style={styles.deleteButton}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="#9CA3AF" />
-                    </Pressable>
-                  </Pressable>
+                    <View style={styles.breakdownTrack}>
+                      <View
+                        style={[
+                          styles.breakdownFill,
+                          {
+                            width: `${barWidth}%` as `${number}%`,
+                            backgroundColor: category.color,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
                 );
               })}
             </View>
           )}
+
+          {/* Expense list */}
+          <View style={styles.listSection}>
+            <View style={styles.listHeaderRow}>
+              <Text style={styles.sectionTitle}>Recent Expenses</Text>
+              <Text style={styles.sectionCount}>{visibleExpenses.length} shown</Text>
+            </View>
+
+            {visibleExpenses.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Ionicons name="wallet-outline" size={48} color="#D1D5DB" />
+                <Text style={styles.emptyTitle}>
+                  {expenses.length === 0 ? "No expenses yet" : "No matching expenses"}
+                </Text>
+                <Text style={styles.emptyText}>
+                  {expenses.length === 0
+                    ? "Tap Add to record your first expense."
+                    : "Try a different search term or category."}
+                </Text>
+              </View>
+            ) : (
+              visibleExpenses.map((expense) => {
+                const meta = getCategoryMeta(expense.category);
+
+                return (
+                  <View key={expense.id} style={styles.expenseCard}>
+                    {renderCategoryIcon(expense.category)}
+
+                    <View style={styles.expenseDetails}>
+                      <Text style={styles.expenseTitle} numberOfLines={1}>
+                        {expense.title}
+                      </Text>
+                      <Text style={styles.expenseMeta}>
+                        {meta.label} · {formatDateLabel(expense.date)}
+                      </Text>
+                      {expense.note ? (
+                        <Text style={styles.expenseNote} numberOfLines={1}>
+                          {expense.note}
+                        </Text>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.expenseRight}>
+                      <Text style={styles.expenseAmount}>
+                        -{currencySymbol} {formatAmount(expense.amount)}
+                      </Text>
+                      <Pressable
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteExpense(expense)}
+                        hitSlop={8}
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#9CA3AF" />
+                      </Pressable>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
         </View>
       </ScrollView>
 
-      {/* === Add Item Modal */}
+      {/* Add expense modal */}
       <Modal
         animationType="slide"
-        transparent={true}
-        visible={addItemModalVisible}
-        onRequestClose={() => setAddItemModalVisible(false)}
+        transparent
+        visible={addModalVisible}
+        onRequestClose={() => setAddModalVisible(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.modalOverlay}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeaderTitle}>Add Item to "{activeList.name}"</Text>
-              <Pressable onPress={() => setAddItemModalVisible(false)}>
+              <Text style={styles.modalTitle}>New Expense</Text>
+              <Pressable onPress={() => setAddModalVisible(false)} hitSlop={8}>
                 <Ionicons name="close" size={24} color="#111827" />
               </Pressable>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputSubLabel}>Product Name *</Text>
+              <Text style={styles.inputLabel}>What did you spend on?</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. Mechanical Keyboard"
+                placeholder="e.g. Weekly groceries"
                 placeholderTextColor="#9CA3AF"
-                value={newItemName}
-                onChangeText={setNewItemName}
+                value={newTitle}
+                onChangeText={setNewTitle}
               />
 
-              <Text style={styles.inputSubLabel}>Estimated Price</Text>
+              <Text style={styles.inputLabel}>Amount ({currencySymbol})</Text>
               <TextInput
-                style={styles.textInput}
-                placeholder="e.g. 1299"
+                style={[styles.textInput, styles.amountInput]}
+                placeholder="0.00"
                 placeholderTextColor="#9CA3AF"
-                value={newItemPrice}
-                onChangeText={setNewItemPrice}
                 keyboardType="decimal-pad"
+                value={newAmount}
+                onChangeText={setNewAmount}
               />
 
-              {/* <Text style={styles.inputSubLabel}>Category</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g. Computers, Groceries"
-                placeholderTextColor="#9CA3AF"
-                value={newItemCategory}
-                onChangeText={setNewItemCategory}
-              /> */}
+              <Text style={styles.inputLabel}>Category</Text>
+              <View style={styles.categoryPicker}>
+                {CATEGORIES.map((category) => {
+                  const isActive = newCategory === category.key;
 
-              <Text style={styles.inputSubLabel}>Attach Product Image</Text>
-              <View style={styles.imageActionRow}>
-                <Pressable style={styles.imageActionButton1} onPress={handleTakePhoto}>
-                  <Ionicons name="camera-outline" size={18} color="#D97706" />
-                  <Text style={styles.imageActionText}>Take Photo</Text>
-                </Pressable>
-
-                <Pressable style={styles.imageActionButton2} onPress={handlePickImage}>
-                  <Ionicons name="image-outline" size={18} color="#D97706" />
-                  <Text style={styles.imageActionText}>Upload Image</Text>
-                </Pressable>
+                  return (
+                    <Pressable
+                      key={category.key}
+                      style={[styles.categoryOption, isActive && styles.categoryOptionActive]}
+                      onPress={() => setNewCategory(category.key)}
+                    >
+                      <Ionicons
+                        name={category.icon}
+                        size={16}
+                        color={isActive ? "#B45309" : category.color}
+                      />
+                      <Text
+                        style={[
+                          styles.categoryOptionText,
+                          isActive && styles.categoryOptionTextActive,
+                        ]}
+                      >
+                        {category.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
 
-              {/* <View style={styles.imageActionRow}>
-                <Pressable style={styles.imageActionButton} onPress={handleTakePhoto}>
-                  <Ionicons name="camera-outline" size={18} color="#D97706" />
-                  <Text style={styles.imageActionText}>Take Photo</Text>
+              <Text style={styles.inputLabel}>Date</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#9CA3AF"
+                value={newDate}
+                onChangeText={setNewDate}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.inputLabel}>Note (optional)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Paid by card"
+                placeholderTextColor="#9CA3AF"
+                value={newNote}
+                onChangeText={setNewNote}
+              />
+
+              <View style={styles.modalActions}>
+                <Pressable style={styles.cancelButton} onPress={() => setAddModalVisible(false)}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
                 </Pressable>
 
-                <Pressable style={styles.imageActionButton} onPress={handlePickImage}>
-                  <Ionicons name="image-outline" size={18} color="#D97706" />
-                  <Text style={styles.imageActionText}>Upload Image</Text>
-                </Pressable>
-              </View> */}
-
-              {newItemImage !== '' && (
-                <View style={styles.previewContainer}>
-                  <Image source={{ uri: newItemImage }} style={styles.photoPreview} resizeMode="cover" />
-                  <View style={styles.previewMeta}>
-                    <Text style={styles.previewLabel}>Image attached successfully</Text>
-                    <Pressable onPress={() => setNewItemImage('')}>
-                      <Text style={styles.removePhotoText}>Remove</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.modalFooterButtons}>
-                {/* <Pressable 
-                  style={styles.modalCancelButton} 
-                  onPress={() => setAddItemModalVisible(false)}
-                >
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                </Pressable> */}
-
-                <Pressable style={styles.addButton} onPress={handleAddItem}>
-                  <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                  <Text style={styles.addButtonText}>Save Item</Text>
+                <Pressable style={styles.saveButton} onPress={handleAddExpense}>
+                  <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                  <Text style={styles.saveButtonText}>Save Expense</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -536,517 +731,51 @@ export default function ShoppingView() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Monthly budget modal */}
+      <Modal
+        animationType="fade"
+        // animationType="none"
+
+        transparent
+        visible={budgetModalVisible}
+        onRequestClose={() => setBudgetModalVisible(false)}
+      >
+        <View style={styles.budgetModalOverlay}>
+          <View style={styles.budgetModalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Monthly Budget</Text>
+              <Pressable onPress={() => setBudgetModalVisible(false)} hitSlop={8}>
+                <Ionicons name="close" size={24} color="#111827" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.budgetHelpText}>
+              Set how much you plan to spend each month. Your progress is shown on the summary
+              card.
+            </Text>
+
+            <Text style={styles.inputLabel}>Budget amount ({currencySymbol})</Text>
+            <TextInput
+              style={[styles.textInput, styles.amountInput]}
+              placeholder="5000"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="decimal-pad"
+              value={budgetInput}
+              onChangeText={setBudgetInput}
+            />
+
+            <View style={styles.modalActions}>
+              <Pressable style={styles.cancelButton} onPress={() => setBudgetModalVisible(false)}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+
+              <Pressable style={styles.saveButton} onPress={handleSaveBudget}>
+                <Text style={styles.saveButtonText}>Save Budget</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  // outerContainer: {
-  //   flex: 1,
-  //   backgroundColor: '#F9FAFB',
-  //   // padding: 20,
-  //   paddingHorizontal: 20,
-
-  //   // paddingTop: 40, 
-  //   // marginTop: 20, 
-  // },
-  // scrollContent: {
-  //   paddingBottom: 40,
-  // },
-
-  // === LAYOUT 
-  outerContainer: GlobalStyles.mainContainer, 
-
-  scrollContent: GlobalStyles.scrollContent,  
-
-  // --- Header
-  headerContainer: GlobalStyles.headerContainer, 
-  // headerContainer: { },  
-
-   // === HEADER ===
-  // headerContainer: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   alignItems: 'baseline',
-  //   paddingTop: 10,
-
-  // },
-  // headerContainer: {
-    // flexDirection: 'row',
-    // justifyContent: 'space-between',
-    // alignItems: 'center',
-    // marginBottom: 20,
-    // paddingTop: 50,
-    // paddingBottom: 6,
-  // },
-
-
-  // headerTitle: {
-  //   // fontSize: 34,
-  //   fontSize: 42,
-
-  //   fontWeight: '700',
-  //   // fontFamily: 'serif', 
-  //   color: '#111827',
-  //   letterSpacing: -1, 
-
-  // },
-
-  headerTitle: GlobalStyles.pageHeading, 
-
-  headerSubtitle: GlobalStyles.pageSubheading, 
-
-  // -------------------------------------------
-
-  // headerSubtitle: {
-  //   fontSize: 14,
-  //   color: '#6B7280',
-  //   marginTop: 4,
-  // },
-  backButton: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#FEF3C7',
-  },
-
-
-  // --- search 
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 20,
-    // maxWidth: 400,
-
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#111827',
-    padding: 0,
-    // @ts-ignore
-    outlineStyle: 'none',
-  } as any,
-
-
-  savedListsSection: {
-    // marginBottom: 20,
-    marginBottom: 50,
-    marginTop: 30,
-    // margin: 10, 
-    // backgroundColor: 'rgba(255, 204, 128, 0.74)',
-    padding: 20,  
-
-     boxShadow: "0px 6px 6px rgba(0, 0, 0, 0.1)",
-    // elevation: 5, 
-    // elevation: 1, 
-
-    borderRadius: 10, 
-    // borderColor: 'rgb(141, 141, 141)', 
-    // borderWidth: 1, 
-  },
-  savedListsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-    // padding: 20,  
-
-  },
-  sectionLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginLeft: 10, 
-  },
-  newListTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  newListTriggerText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#D97706',
-    marginLeft: 4,
-  },
-  newListForm: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    // margin: 0,
-  },
-  createListButton: {
-    // backgroundColor: '#E59400',
-    backgroundColor: '#1aaa00',
-
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    height: 46,
-  },
-  createListButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  listsScrollRow: {
-    flexDirection: 'row',
-    padding: 10, 
-  },
-  listPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginRight: 8,
-  },
-  listPillActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
-  },
-  listPillText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4B5563',
-  },
-  listPillTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  deleteListIcon: {
-    marginLeft: 6,
-  },
-
-  // --- progress
-  progressCardContainer: {
-    marginBottom: 20,
-    maxWidth: 500,
-    // maxWidth: 900,
-
-  },
-  progressCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 10,
-  },
-  progressInfo: {
-    flex: 1,
-  },
-  selectedListTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  progressCount: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 3,
-  },
-  badgeContainer: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  badgeText: {
-    color: '#D97706',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-
-  // --- (modal) add a new item 
-  openModalButton: {
-    // backgroundColor: '#E59400',
-    backgroundColor: '#1aaa00',
-
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    // maxWidth: 500,
-    // maxWidth: 900,
-    // maxWidth: 200,
-  },
-  openModalButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-
-
-  // --- Modal Specific Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-    // padding:10, 
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalHeaderTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    padding: 10, 
-  },
-  modalFooterButtons: {
-    flexDirection: 'row',
-    marginTop: 10,
-    gap: 10,
-  },
-  modalCancelButton: {
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 48,
-    borderRadius: 10,
-    paddingHorizontal: 20,
-  },
-  modalCancelButtonText: {
-    color: '#4B5563',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-
-  textInput: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    height: 46,
-    fontSize: 14,
-    color: '#111827',
-    marginBottom: 12,
-    // margin: 10, 
-    marginHorizontal: 10, 
-
-  },
-  inputSubLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#4B5563',
-    marginBottom: 6,
-    marginHorizontal: 10, 
-
-  },
-
-
-  imageActionRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    marginHorizontal: 10, 
-
-  },
-  imageActionButton1: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginRight: 9,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-    imageActionButton2: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginLeft: 9,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-
-  imageActionText: {
-    color: '#D97706',
-    fontWeight: '600',
-    fontSize: 13,
-    marginLeft: 6,
-  },
-
-
-  previewContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    padding: 8,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
-  photoPreview: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  previewMeta: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewLabel: {
-    fontSize: 13,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  removePhotoText: {
-    fontSize: 13,
-    color: '#EF4444',
-    fontWeight: '600',
-  },
-  addButton: {
-    backgroundColor: '#E59400',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 48,
-    borderRadius: 10,
-    flex: 1,
-    marginHorizontal: 10, 
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-
-  // --- list of items 
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12, // Spacing between grid items
-  },
-  listSection: {
-    marginTop: 4,
-    // maxWidth: 400,
-  },
-  formSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  todoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  todoCardCompleted: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#E5E7EB',
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  checkboxChecked: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  productThumbnail: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: '#E5E7EB',
-  },
-  itemDetails: {
-    flex: 1,
-  },
-  itemName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  itemNameCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#9CA3AF',
-  },
-  itemMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 3,
-  },
-  itemCategory: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginRight: 10,
-  },
-  itemPrice: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#D97706',
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 30,
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  emptyText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-
-
-});
