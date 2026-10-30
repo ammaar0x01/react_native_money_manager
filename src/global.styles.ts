@@ -3,12 +3,12 @@ global.styles.ts
 ================
 */
 
-import { TextStyle } from "react-native";
-import { ColorsThemeDefault } from "./themeDefault.styles";
+import { TextStyle, ViewStyle } from "react-native";
+import { ThemeDefault } from "./themeDefault.styles";
 // -----------------------------------
 
 // --- Change the theme here --- 
-export const themeName = ColorsThemeDefault
+export const themeName = ThemeDefault
 
 // --- SETUP ---
 const backgroundColor = themeName.background
@@ -41,15 +41,30 @@ export const GlobalStyles = {
   },
 
   // === HEADER ===
-  pageTitle: {
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingTop: 10,
+
+  } as ViewStyle,
+
+  pageHeading: {
     fontSize: 44,
-    fontWeight: "800" as TextStyle["fontWeight"],
+    // fontWeight: '600', 
+    fontWeight: "600" as TextStyle["fontWeight"],
     color: pageHeadingColor, 
-    marginBottom: 20,
+    marginBottom: 5,
+    letterSpacing: -1, 
+
+    // fontSize: 34,
+    // fontWeight: 'bold',
+    // color: '#1a1a1a',
   },
-  pageSubtitle: {
+  pageSubheading: {
     fontSize: 13,
     color: pageSubheadingColor, 
-    marginTop: 4,
+    // marginTop: 4,
+    marginBottom: 20, 
   } as const,
 };

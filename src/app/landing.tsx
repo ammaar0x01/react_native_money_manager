@@ -1,557 +1,341 @@
-
-import React, { useRef, useState } from "react";
+import React from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  Pressable,
-  Linking,
-  useWindowDimensions,
-  ImageBackground,
   StyleSheet,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+  Text,
+  View,
+  ScrollView,
+  Pressable,
+  Image,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
-import { stylesLanding as styles } from "@/styles/landing.styles";
-
-const CATEGORIES = [
-  "Jewellery",
-  "Computers",
-  "Appliances",
-  "Gaming",
-  "Hair",
-  "Gold",
-  "Promotions",
-  "Best Prices",
-  "Phones",
-  "TVs",
-];
-
-export type SocialPlatform =
-  | "email"
-  | "facebook"
-  | "instagram"
-  | "twitter"
-  | "youtube";
-
-const SOCIAL_URLS: Record<SocialPlatform, string> = {
-  email: "mailto:support@thepawnshop.co.za",
-  facebook: "https://www.facebook.com",
-  instagram: "https://www.instagram.com",
-  twitter: "https://www.twitter.com",
-  youtube: "https://www.youtube.com",
-};
-
-export default function LandingView() {
+export default function LandingScreen() {
   const { width } = useWindowDimensions();
-  const isSmallScreen = width < 768;
-  const [menuOpen, setMenuOpen] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  // Contact form state
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
-
-  // Search input focus states
-  const [focusedInput, setFocusedInput] = useState<"product" | "store" | null>(
-    null,
-  );
-
-  // Hover states for web interactivity
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
-  const [hoveredFooterLink, setHoveredFooterLink] = useState<string | null>(
-    null,
-  );
-  const [isSearchHovered, setIsSearchHovered] = useState(false);
-  const [isSubmitHovered, setIsSubmitHovered] = useState(false);
-  const [isTopHovered, setIsTopHovered] = useState(false);
-
-  let categoryChipWidth = "48%";
-  if (width >= 1024) {
-    categoryChipWidth = "23%";
-  } else if (width >= 768) {
-    categoryChipWidth = "31%";
-  }
-
-  const handleSocialPress = (platform: SocialPlatform) => {
-    Linking.openURL(SOCIAL_URLS[platform]);
-  };
-
-  const handleSendMessage = () => {
-    if (!email || !message) {
-      alert("Please fill in your email and message.");
-      return;
-    }
-    alert("Your message has been sent successfully!");
-    setEmail("");
-    setName("");
-    setMessage("");
-  };
-
-  const scrollToTop = () => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  };
+  const isDesktop = width >= 768;
 
   return (
-    <View style={styles.container}>
-      {/* Background Image Container wrapping the entire screen */}
-      <ImageBackground 
-        source={{ uri: 'https://images.unsplash.com/photo-1555529771-835f59fc5efe?q=80&w=1000&auto=format&fit=crop' }} 
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        {/* Semi-transparent warm dark overlay */}
-        <View style={styles.overlay} />
-
-        {/* Sticky Top Navbar */}
-        <View style={styles.stickyNavBar}>
-          {isSmallScreen ? (
-            <View style={styles.mobileNavRow}>
-              <Text style={styles.navBrand}>
-                The <Text style={styles.brandAccent}>PawnShop</Text>
-              </Text>
-              <Pressable
-                onPress={() => setMenuOpen(!menuOpen)}
-                style={styles.hamburgerBtn}
-              >
-                <Ionicons
-                  name={menuOpen ? "close" : "menu"}
-                  size={26}
-                  color="#FFFFFF"
-                />
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.desktopNavContainer}>
-              <Text style={styles.navBrand}>
-                The <Text style={styles.brandAccent}>PawnShop</Text>
-              </Text>
-              <View style={styles.navLinksRight}>
-                <Pressable onPress={() => router.push("/" as any)}>
-                  <Text style={styles.navLink}>Home</Text>
-                </Pressable>
-                <Pressable onPress={() => router.push("/stores" as any)}>
-                  <Text style={styles.navLink}>All Stores</Text>
-                </Pressable>
-                <Pressable onPress={() => router.push("/sell" as any)}>
-                  <Text style={styles.navLink}>Sell</Text>
-                </Pressable>
-                <Pressable onPress={() => router.push("/cart" as any)}>
-                  <Text style={styles.navLink}>Cart</Text>
-                </Pressable>
-                <Pressable onPress={() => router.push("/(auth)/signup" as any)}>
-                  <Text style={styles.navLinkAccent}>Sign Up</Text>
-                </Pressable>
-                <Pressable onPress={() => router.push("/(auth)/login" as any)}>
-                  <Text style={styles.navLinkAccent}>Log In</Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      
+      {/* Navbar */}
+      <View style={[styles.navbar, { paddingHorizontal: isDesktop ? 60 : 20 }]}>
+        <View style={styles.brandContainer}>
+          <View style={styles.brandIconBox}>
+            <Ionicons name="bag-check-outline" size={24} color="#FFFFFF" />
+          </View>
+          <Text style={styles.brandText}>Listify & Co.</Text>
         </View>
 
-        {/* Collapsible Mobile Menu Dropdown */}
-        {isSmallScreen && menuOpen && (
-          <View style={styles.mobileDropdownMenu}>
-            <Pressable
-              onPress={() => {
-                router.push("/" as any);
-                setMenuOpen(false);
-              }}
-              style={styles.dropdownItem}
-            >
-              <Text style={styles.dropdownText}>Home</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                router.push("/stores" as any);
-                setMenuOpen(false);
-              }}
-              style={styles.dropdownItem}
-            >
-              <Text style={styles.dropdownText}>All Stores</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                router.push("/sell" as any);
-                setMenuOpen(false);
-              }}
-              style={styles.dropdownItem}
-            >
-              <Text style={styles.dropdownText}>Sell</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                router.push("/cart" as any);
-                setMenuOpen(false);
-              }}
-              style={styles.dropdownItem}
-            >
-              <Text style={styles.dropdownText}>Cart</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                router.push("/(auth)/signup" as any);
-                setMenuOpen(false);
-              }}
-              style={styles.dropdownItem}
-            >
-              <Text style={styles.dropdownTextAccent}>Sign Up</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                router.push("/(auth)/login" as any);
-                setMenuOpen(false);
-              }}
-              style={styles.dropdownItem}
-            >
-              <Text style={styles.dropdownTextAccent}>Log In</Text>
-            </Pressable>
-          </View>
-        )}
-
-        <ScrollView
-          ref={scrollViewRef}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        <Pressable 
+          style={styles.navLaunchButton} 
+          onPress={() => router.replace('/(tabs)/shopping' as any)}
         >
-          {/* Full-Height (~100vh) Orange Hero Search Banner */}
-          <View style={styles.heroSection}>
-            <View style={styles.searchBoxCard}>
-              <TextInput
-                placeholder="Search Products..."
-                placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                style={[
-                  styles.transparentInputField,
-                  focusedInput === "product" &&
-                    styles.transparentInputFieldFocused,
-                ]}
-                onFocus={() => setFocusedInput("product")}
-                onBlur={() => setFocusedInput(null)}
-              />
-              <TextInput
-                placeholder="Select a Store..."
-                placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                style={[
-                  styles.transparentInputField,
-                  focusedInput === "store" && styles.transparentInputFieldFocused,
-                ]}
-                onFocus={() => setFocusedInput("store")}
-                onBlur={() => setFocusedInput(null)}
-              />
-              <Pressable
-                style={[
-                  styles.searchButton,
-                  isSearchHovered && styles.searchButtonHover,
-                ]}
-                onHoverIn={() => setIsSearchHovered(true)}
-                onHoverOut={() => setIsSearchHovered(false)}
-              >
-                <Text
-                  style={[
-                    styles.searchButtonText,
-                    isSearchHovered && styles.searchButtonTextHover,
-                  ]}
-                >
-                  Search
-                </Text>
-              </Pressable>
-            </View>
+          <Text style={styles.navLaunchButtonText}>Open App</Text>
+          <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
+        </Pressable>
+      </View>
+
+      {/* Hero Section */}
+      <View style={[styles.heroSection, { paddingHorizontal: isDesktop ? 60 : 20 }]}>
+        <View style={[styles.heroContent, isDesktop && styles.heroContentDesktop]}>
+          <View style={styles.pillBadge}>
+            <Ionicons name="flash" size={14} color="#D97706" style={{ marginRight: 6 }} />
+            <Text style={styles.pillBadgeText}>Smart Offline-First Shopping</Text>
           </View>
 
-          {/* Main Content Section */}
-          <View style={styles.mainWhiteContainer}>
-            {/* Browse by Category Grid Section */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Browse by Category</Text>
-              <View style={styles.categoryGrid}>
-                {CATEGORIES.map((cat, idx) => {
-                  const isHovered = hoveredCategory === cat;
-                  return (
-                    <Pressable
-                      key={idx}
-                      style={[
-                        styles.categoryChip,
-                        { width: categoryChipWidth as any },
-                        isHovered && styles.categoryChipHover,
-                      ]}
-                      onHoverIn={() => setHoveredCategory(cat)}
-                      onHoverOut={() => setHoveredCategory(null)}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/product/products",
-                          params: { category: cat },
-                        } as any)
-                      }
-                    >
-                      <Text
-                        style={[
-                          styles.categoryChipText,
-                          isHovered && styles.categoryChipTextHover,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {cat}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
+          <Text style={styles.heroTitle}>
+            Organize Your Shopping. <Text style={styles.heroTitleHighlight}>Without Limits.</Text>
+          </Text>
 
-            {/* About Us Section */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.aboutTitle}>About Us</Text>
-              <View style={styles.aboutCard}>
-                <Text style={styles.aboutText}>
-                  Need fast cash or looking for a great bargain? At{" "}
-                  <Text style={{ fontWeight: "800" }}>The PawnShop</Text>, we make
-                  pawning, buying, and selling simple and secure. Whether you are
-                  looking to unlock cash value from your pre-owned tools,
-                  electronics, gaming gear, appliances, or gold and jewellery, or
-                  looking for certified second-hand deals at unbeatable prices—our
-                  friendly team is here to help. Visit one of our branches today
-                  for honest evaluations and quick cash payouts!
-                </Text>
-              </View>
-            </View>
+          <Text style={styles.heroDescription}>
+            Create multiple smart shopping lists, snap product photos on the go, track estimated prices, and check off items seamlessly whether you're online or offline.
+          </Text>
 
-            {/* Contact Us Card Section */}
-            <View style={styles.sectionContainer}>
-              <View style={styles.contactCard}>
-                <Text style={styles.contactCardTitle}>Contact Us</Text>
-
-                <View style={styles.formGroupRow}>
-                  <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Your Email Address"
-                    placeholderTextColor="#A1A1AA"
-                    style={styles.formInput}
-                  />
-                </View>
-
-                <View style={styles.formGroupRow}>
-                  <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Your Name"
-                    placeholderTextColor="#A1A1AA"
-                    style={styles.formInput}
-                  />
-                </View>
-
-                <View style={styles.formGroupColumn}>
-                  <TextInput
-                    value={message}
-                    onChangeText={setMessage}
-                    placeholder="Type your inquiry or item details here..."
-                    placeholderTextColor="#A1A1AA"
-                    multiline
-                    numberOfLines={4}
-                    style={[
-                      styles.formInput,
-                      { height: 110, textAlignVertical: "top" },
-                    ]}
-                  />
-                </View>
-
-                <Pressable
-                  style={[
-                    styles.sendButton,
-                    isSubmitHovered && styles.sendButtonHover,
-                  ]}
-                  onHoverIn={() => setIsSubmitHovered(true)}
-                  onHoverOut={() => setIsSubmitHovered(false)}
-                  onPress={handleSendMessage}
-                >
-                  <Text style={styles.sendButtonText}>Send Message</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Download Mobile App Section */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Download the Mobile App</Text>
-              <View style={styles.appLinksRow}>
-                <Pressable
-                  onPress={() => Linking.openURL("https://play.google.com")}
-                >
-                  <Text style={styles.appLinkText}>Android</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() =>
-                    Linking.openURL("https://www.apple.com/app-store/")
-                  }
-                >
-                  <Text style={styles.appLinkText}>iOS</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => Linking.openURL("https://www.median.co")}
-                >
-                  <Text style={styles.appLinkText}>Media.Code</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Connect with us Social Card */}
-            <View style={styles.socialCardContainer}>
-              <Text style={styles.socialCardTitle}>Connect with us</Text>
-              <View style={styles.socialIconsRow}>
-                <Pressable
-                  onPress={() => handleSocialPress("email")}
-                  style={[
-                    styles.socialIconWrapper,
-                    hoveredSocial === "email" && styles.socialIconWrapperHover,
-                  ]}
-                  onHoverIn={() => setHoveredSocial("email")}
-                  onHoverOut={() => setHoveredSocial(null)}
-                >
-                  <Ionicons name="mail" size={18} color="#000" />
-                </Pressable>
-
-                <Pressable
-                  onPress={() => handleSocialPress("twitter")}
-                  style={[
-                    styles.socialIconWrapper,
-                    hoveredSocial === "twitter" && styles.socialIconWrapperHover,
-                  ]}
-                  onHoverIn={() => setHoveredSocial("twitter")}
-                  onHoverOut={() => setHoveredSocial(null)}
-                >
-                  <Ionicons name="logo-twitter" size={18} color="#000" />
-                </Pressable>
-
-                <Pressable
-                  onPress={() => handleSocialPress("facebook")}
-                  style={[
-                    styles.socialIconWrapper,
-                    hoveredSocial === "facebook" && styles.socialIconWrapperHover,
-                  ]}
-                  onHoverIn={() => setHoveredSocial("facebook")}
-                  onHoverOut={() => setHoveredSocial(null)}
-                >
-                  <Ionicons name="logo-facebook" size={18} color="#000" />
-                </Pressable>
-
-                <Pressable
-                  onPress={() => handleSocialPress("instagram")}
-                  style={[
-                    styles.socialIconWrapper,
-                    hoveredSocial === "instagram" &&
-                      styles.socialIconWrapperHover,
-                  ]}
-                  onHoverIn={() => setHoveredSocial("instagram")}
-                  onHoverOut={() => setHoveredSocial(null)}
-                >
-                  <Ionicons name="logo-instagram" size={18} color="#000" />
-                </Pressable>
-
-                <Pressable
-                  onPress={() => handleSocialPress("youtube")}
-                  style={[
-                    styles.socialIconWrapper,
-                    hoveredSocial === "youtube" && styles.socialIconWrapperHover,
-                  ]}
-                  onHoverIn={() => setHoveredSocial("youtube")}
-                  onHoverOut={() => setHoveredSocial(null)}
-                >
-                  <Ionicons name="logo-youtube" size={18} color="#000" />
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Back to top button */}
-            <Pressable
-              onPress={scrollToTop}
-              style={[
-                styles.backToTopButton,
-                isTopHovered && styles.backToTopButtonHover,
-              ]}
-              onHoverIn={() => setIsTopHovered(true)}
-              onHoverOut={() => setIsTopHovered(false)}
+          <View style={styles.heroButtonsRow}>
+            <Pressable 
+              style={styles.primaryButton}
+              onPress={() => router.replace('/(tabs)/shopping' as any)}
             >
-              <Text style={styles.backToTopText}>Back to top</Text>
+              <Text style={styles.primaryButtonText}>Get Started Free</Text>
+              <Ionicons name="rocket-outline" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
+            </Pressable>
+
+            <Pressable 
+              style={styles.secondaryButton}
+              onPress={() => router.replace('/(tabs)/index' as any)}
+            >
+              <Ionicons name="document-text-outline" size={18} color="#1F2937" style={{ marginRight: 8 }} />
+              <Text style={styles.secondaryButtonText}>Quick Notes</Text>
             </Pressable>
           </View>
+        </View>
 
-          {/* Full-Width Rounded Footer */}
-          <View style={styles.footer}>
-            <View style={styles.footerInner}>
-              <View>
-                <Text style={styles.navBrand}>
-                  The <Text style={styles.brandAccent}>PawnShop</Text>
-                </Text>
-              </View>
-              <View style={styles.footerLinksCol}>
-                <Pressable
-                  onPress={() => router.push("/" as any)}
-                  onHoverIn={() => setHoveredFooterLink("about")}
-                  onHoverOut={() => setHoveredFooterLink(null)}
-                >
-                  <Text
-                    style={[
-                      styles.footerItem,
-                      hoveredFooterLink === "about" && styles.footerItemHover,
-                    ]}
-                  >
-                    About us
-                  </Text>
-                </Pressable>
+        {/* Hero Illustration / App Preview Mockup */}
+        <View style={[styles.heroImageContainer, isDesktop && styles.heroImageContainerDesktop]}>
+          <Image
+            source={{ uri: 'https://images.unsplash.com/photo-1557821552-17105176670c?auto=format&fit=crop&w=1000&q=80' }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+        </View>
+      </View>
 
-                <Pressable
-                  onPress={() => router.push("/sell" as any)}
-                  onHoverIn={() => setHoveredFooterLink("pawn")}
-                  onHoverOut={() => setHoveredFooterLink(null)}
-                >
-                  <Text
-                    style={[
-                      styles.footerItem,
-                      hoveredFooterLink === "pawn" && styles.footerItemHover,
-                    ]}
-                  >
-                    Pawn
-                  </Text>
-                </Pressable>
+      {/* Features Grid Section */}
+      <View style={[styles.featuresSection, { paddingHorizontal: isDesktop ? 60 : 20 }]}>
+        <Text style={styles.sectionCategory}>POWERFUL FEATURES</Text>
+        <Text style={styles.sectionTitle}>Everything you need to shop smarter</Text>
 
-                <Pressable
-                  onPress={() => router.push("/product/products" as any)}
-                  onHoverIn={() => setHoveredFooterLink("download")}
-                  onHoverOut={() => setHoveredFooterLink(null)}
-                >
-                  <Text
-                    style={[
-                      styles.footerItem,
-                      hoveredFooterLink === "download" && styles.footerItemHover,
-                    ]}
-                  >
-                    Download
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => router.push("/stores" as any)}
-                  onHoverIn={() => setHoveredFooterLink("locator")}
-                  onHoverOut={() => setHoveredFooterLink(null)}
-                >
-                  <Text
-                    style={[
-                      styles.footerItem,
-                      hoveredFooterLink === "locator" && styles.footerItemHover,
-                    ]}
-                  >
-                    Store Locator
-                  </Text>
-                </Pressable>
-              </View>
+        <View style={[styles.featuresGrid, isDesktop && styles.featuresGridDesktop]}>
+          
+          {/* Feature 1 */}
+          <View style={styles.featureCard}>
+            <View style={[styles.featureIconBox, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="cloud-offline-outline" size={24} color="#D97706" />
             </View>
+            <Text style={styles.featureCardTitle}>Offline-First Storage</Text>
+            <Text style={styles.featureCardDesc}>
+              Powered by local device persistence. Your lists and items are always saved securely, even without an internet connection.
+            </Text>
           </View>
-        </ScrollView>
-      </ImageBackground>
-    </View>
+
+          {/* Feature 2 */}
+          <View style={styles.featureCard}>
+            <View style={[styles.featureIconBox, { backgroundColor: '#E0E7FF' }]}>
+              <Ionicons name="camera-outline" size={24} color="#4F46E5" />
+            </View>
+            <Text style={styles.featureCardTitle}>Camera & Gallery Uploads</Text>
+            <Text style={styles.featureCardDesc}>
+              Snap live photos of products using your camera or pick references straight from your gallery to keep visual tabs on items.
+            </Text>
+          </View>
+
+          {/* Feature 3 */}
+          <View style={styles.featureCard}>
+            <View style={[styles.featureIconBox, { backgroundColor: '#D1FAE5' }]}>
+              <Ionicons name="search-outline" size={24} color="#059669" />
+            </View>
+            <Text style={styles.featureCardTitle}>Real-Time Item Filtering</Text>
+            <Text style={styles.featureCardDesc}>
+              Quickly look up products or categories inside your active lists using the lightning-fast instant search bar.
+            </Text>
+          </View>
+
+        </View>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>© 2026 Listify & Co. Built with React Native & Expo.</Text>
+      </View>
+
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  navbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#E59400',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  brandText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  navLaunchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  navLaunchButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  heroSection: {
+    paddingVertical: 50,
+    flexDirection: 'column',
+  },
+  heroContent: {
+    alignItems: 'flex-start',
+    marginBottom: 40,
+  },
+  heroContentDesktop: {
+    maxWidth: '55%',
+    paddingRight: 20,
+  },
+  heroImageContainer: {
+    width: '100%',
+    height: 280,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  heroImageContainerDesktop: {
+    position: 'absolute',
+    right: 60,
+    top: 50,
+    width: '40%',
+    height: 420,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  pillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  pillBadgeText: {
+    color: '#D97706',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  heroTitle: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#111827',
+    lineHeight: 46,
+    marginBottom: 16,
+  },
+  heroTitleHighlight: {
+    color: '#E59400',
+  },
+  heroDescription: {
+    fontSize: 16,
+    color: '#4B5563',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  heroButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E59400',
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  secondaryButtonText: {
+    color: '#1F2937',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  featuresSection: {
+    paddingVertical: 50,
+    backgroundColor: '#F9FAFB',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  sectionCategory: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#E59400',
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 30,
+  },
+  featuresGrid: {
+    flexDirection: 'column',
+    gap: 20,
+  },
+  featuresGridDesktop: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  featureCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  featureIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  featureCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  featureCardDesc: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  footer: {
+    paddingVertical: 30,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#9CA3AF',
+  },
+});

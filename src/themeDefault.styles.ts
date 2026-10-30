@@ -4,8 +4,10 @@ DEFAULT COLOR THEME
 ========================
 */
 
-export const ColorsThemeDefault = {
+export const ThemeDefault = {
   background: "#ffffff",
+  backgroundForComponents: "#1aaa00", 
+
   text: "#000000",
   pageHeading: "#000000",
   pageSubheading: "#6B7280",

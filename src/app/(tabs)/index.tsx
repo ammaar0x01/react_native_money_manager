@@ -1,330 +1,1052 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, ImageBackground, Image, StyleSheet, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  ScrollView, 
+  Pressable, 
+  Image,
+  StyleSheet, 
+  KeyboardAvoidingView, 
+  Platform,
+  useWindowDimensions,
+  Alert,
+  Modal 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { stylesIndex as styles } from '@/styles/index.style';
-import img1 from '@/images/products/product1.jpeg';
+import { GlobalStyles } from '@/global.styles';
+// ----------------------------------------------
 
-const ALL_CATEGORIES = [
-  { 
-    id: 'computers', 
-    name: 'Computers', 
-    count: '34 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'gaming', 
-    name: 'Gaming', 
-    count: '42 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'electronics', 
-    name: 'Electronics', 
-    count: '56 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'kitchen', 
-    name: 'Kitchen', 
-    count: '28 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'audio', 
-    name: 'Audio', 
-    count: '19 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'home-office', 
-    name: 'Home Office', 
-    count: '22 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'new', 
-    name: 'New Arrivals', 
-    count: '15 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'used', 
-    name: 'Certified Used', 
-    count: '31 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'promotions', 
-    name: 'Promotions', 
-    count: '48 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'phones', 
-    name: 'Phones & Tablets', 
-    count: '39 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'tvs', 
-    name: 'TVs & Displays', 
-    count: '18 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=800&q=80' } 
-  },
-  { 
-    id: 'tools', 
-    name: 'Tools & DIY', 
-    count: '25 items', 
-    image: { uri: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80' } 
-  },
+
+interface ShoppingItem {
+  id: string;
+  name: string;
+  price: string;
+  image: string;
+  completed: boolean;
+  category: string;
+}
+
+interface SavedShoppingList {
+  id: string;
+  name: string;
+  items: ShoppingItem[];
+}
+
+const STORAGE_KEY = '@shopping_lists_storage';
+
+const INITIAL_LISTS: SavedShoppingList[] = [
+  {
+    id: 'list-1',
+    name: 'Tech & Gadgets',
+    items: [
+      { 
+        id: '1', 
+        name: 'Acer Aspire Gaming Laptop', 
+        price: 'R 6,499', 
+        image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
+        completed: false, 
+        category: 'Computers' 
+      },
+    ]
+  }
 ];
 
-const FEATURED_PRODUCTS = [
-  { id: '1', name: 'Acer Aspire Gaming Laptop', price: 'R 6,499', rating: '4.8', tag: 'Best Seller', image: img1 },
-  { id: '2', name: 'Sony WH-1000XM4 Headphones', price: 'R 2,999', rating: '4.9', tag: 'Top Rated', image: img1 },
-  { id: '3', name: 'Logitech Mechanical Keyboard', price: 'R 1,299', rating: '4.7', tag: 'Popular', image: img1 },
-  { id: '4', name: 'Instant Vortex Air Fryer', price: 'R 1,899', rating: '4.8', tag: 'Sale', image: img1 },
-  { id: '5', name: 'PlayStation 5 DualSense Controller', price: 'R 1,199', rating: '4.9', tag: 'Gaming', image: img1 },
-  { id: '6', name: 'Dell 27" 4K Monitor', price: 'R 4,500', rating: '4.6', tag: 'Pro', image: img1 },
-];
+export default function ShoppingView() {
+  const [lists, setLists] = useState<SavedShoppingList[]>(INITIAL_LISTS);
+  const [activeListId, setActiveListId] = useState<string>(INITIAL_LISTS[0].id);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
-export default function HomeView() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
-  const [isFeaturedHovered, setIsFeaturedHovered] = useState(false);
+  // New List Form State
+  const [showNewListInput, setShowNewListInput] = useState(false);
+  const [newListName, setNewListName] = useState('');
+
+  // Modal State for Adding Item
+  const [addItemModalVisible, setAddItemModalVisible] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemPrice, setNewItemPrice] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('General');
+  const [newItemImage, setNewItemImage] = useState('');
 
   const { width } = useWindowDimensions();
-
-  // Determine card width percentage based on screen width thresholds
-  let cardWidthPercentage = '48%'; // Medium / Small width -> 2 columns
-  if (width >= 1200) {
-    cardWidthPercentage = '23%'; // Extreme width -> 4 columns
-  } else if (width >= 900) {
-    cardWidthPercentage = '31%'; // Large width -> 3 columns
-  }
-
   const horizontalPadding = width >= 768 ? 40 : 20;
 
-  const handleCategoryPress = (category: typeof ALL_CATEGORIES[0]) => {
-    setSelectedCategory(category.name);
-    router.push({
-      pathname: '/product/products',
-      params: { category: category.name },
-    } as any);
+  useEffect(() => {
+    loadStoredLists();
+  }, []);
+
+  const loadStoredLists = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+      if (storedData) {
+        const parsedLists: SavedShoppingList[] = JSON.parse(storedData);
+        if (parsedLists && parsedLists.length > 0) {
+          setLists(parsedLists);
+          setActiveListId(parsedLists[0].id);
+        }
+      } else {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_LISTS));
+      }
+    } catch (error) {
+      console.error('Failed to load shopping lists offline', error);
+    }
   };
 
-  // Determine if the screen is narrow (e.g., mobile screens under 600px wide)
-  const isNarrow = width < 600;
+  const saveListsToStorage = async (updatedLists: SavedShoppingList[]) => {
+    try {
+      setLists(updatedLists);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLists));
+    } catch (error) {
+      console.error('Failed to save shopping lists offline', error);
+    }
+  };
+
+  const activeList = lists.find((l) => l.id === activeListId) || lists[0];
+
+  const handleTakePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert("Permission Denied", "Camera access is required to take product photos.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setNewItemImage(result.assets[0].uri);
+    }
+  };
+
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert("Permission Denied", "Media library access is required to upload product photos.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setNewItemImage(result.assets[0].uri);
+    }
+  };
+
+  const handleCreateNewList = () => {
+    if (!newListName.trim()) return;
+    const newList: SavedShoppingList = {
+      id: Date.now().toString(),
+      name: newListName.trim(),
+      items: [],
+    };
+    const updatedLists = [...lists, newList];
+    saveListsToStorage(updatedLists);
+    setActiveListId(newList.id);
+    setNewListName('');
+    setShowNewListInput(false);
+  };
+
+  const handleDeleteList = (listId: string) => {
+    if (lists.length <= 1) return;
+    const updatedLists = lists.filter((l) => l.id !== listId);
+    saveListsToStorage(updatedLists);
+    if (activeListId === listId) {
+      setActiveListId(updatedLists[0].id);
+    }
+  };
+
+  const handleAddItem = () => {
+    if (!newItemName.trim()) {
+      Alert.alert('Validation', 'Please enter a product name.');
+      return;
+    }
+    
+    const formattedPrice = newItemPrice.trim() 
+      ? (newItemPrice.startsWith('R') ? newItemPrice.trim() : `R ${newItemPrice.trim()}`) 
+      : 'R 0.00';
+
+    const newItem: ShoppingItem = {
+      id: Date.now().toString(),
+      name: newItemName.trim(),
+      price: formattedPrice,
+      image: newItemImage.trim() ? newItemImage.trim() : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+      completed: false,
+      category: newItemCategory.trim() || 'General',
+    };
+
+    const updatedLists = lists.map((l) => {
+      if (l.id === activeListId) {
+        return { ...l, items: [newItem, ...l.items] };
+      }
+      return l;
+    });
+
+    saveListsToStorage(updatedLists);
+    
+    // Reset and close modal
+    setNewItemName('');
+    setNewItemPrice('');
+    setNewItemCategory('General');
+    setNewItemImage('');
+    setAddItemModalVisible(false);
+  };
+
+  const handleToggleItem = (itemId: string) => {
+    const updatedLists = lists.map((l) => {
+      if (l.id === activeListId) {
+        const updatedItems = l.items.map((item) =>
+          item.id === itemId ? { ...item, completed: !item.completed } : item
+        );
+        return { ...l, items: updatedItems };
+      }
+      return l;
+    });
+    saveListsToStorage(updatedLists);
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    const updatedLists = lists.map((l) => {
+      if (l.id === activeListId) {
+        return { ...l, items: l.items.filter((item) => item.id !== itemId) };
+      }
+      return l;
+    });
+    saveListsToStorage(updatedLists);
+  };
+
+  const filteredItems = activeList.items.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const completedCount = activeList.items.filter((i) => i.completed).length;
+  const totalCount = activeList.items.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <View style={[styles.outerContainer, { paddingHorizontal: horizontalPadding }]}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.outerContainer, { paddingHorizontal: horizontalPadding }]}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Header & Subtitle */}
-        {/* <View style={styles.headerContainer}>
-          <View>
-            <Text style={styles.headerTitle}>Explore Categories</Text>
-            <Text style={styles.headerSubtitle}>Select a category to discover curated products and promotions.</Text>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>Shopping Lists</Text>
+            <Text style={styles.headerSubtitle}>Manage your saved lists & track items offline.</Text>
           </View>
-          <View style={styles.badgeContainer}>
-            <Ionicons name="layers-outline" size={14} color="#E59400" />
-            <Text style={styles.badgeText}>{ALL_CATEGORIES.length} Categories</Text>
+
+          {/* <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={20} color="#E59400" />
+          </Pressable> */}
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search items in this list..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+            </Pressable>
+          )}
+        </View>
+
+        {/* === Saved Lists Selector Bar */}
+        <View style={styles.savedListsSection}>
+          <View style={styles.savedListsHeaderRow}>
+            <Text style={styles.sectionLabel}>Your Lists ({lists.length})</Text>
+            <Pressable 
+              style={styles.newListTrigger} 
+              onPress={() => setShowNewListInput(!showNewListInput)}
+            >
+              <Ionicons name={showNewListInput ? "close" : "add"} size={14} color="#E59400" />
+              <Text style={styles.newListTriggerText}>{showNewListInput ? "Cancel" : "New List"}</Text>
+            </Pressable>
           </View>
-        </View> */}
 
-<View style={[styles.headerContainer]}>
-{/* <View style={[styles.headerContainer, isNarrow ? styles.headerNarrow : styles.headerWide]}> */}
+          {showNewListInput && (
+            <View style={styles.newListForm}>
+              <TextInput
+                style={[styles.textInput, { flex: 1, marginBottom: 0, marginRight: 8 }]}
+                placeholder="List Name (e.g. Groceries)"
+                placeholderTextColor="#9CA3AF"
+                value={newListName}
+                onChangeText={setNewListName}
+                onSubmitEditing={handleCreateNewList}
+              />
+              <Pressable style={styles.createListButton} onPress={handleCreateNewList}>
+                <Text style={styles.createListButtonText}>Save List</Text>
+              </Pressable>
+            </View>
+          )}
 
-      <View>
-        <Text style={[styles.headerTitle, { fontSize: isNarrow ? 30 : 44 }]}>
-          Explore Categories
-        </Text>
-        <Text style={[styles.headerSubtitle, { fontSize: isNarrow ? 13 : 15 }]}>
-          Select a category to discover curated products and promotions.
-        </Text>
-      </View>
-      
-      <View style={styles.badgeContainer}>
-        <Ionicons name="layers-outline" size={14} color="#E59400" />
-        <Text style={styles.badgeText}>{ALL_CATEGORIES.length} Categories</Text>
-      </View>
-    </View>
-
-
-        {/* Responsive Categories Grid */}
-        <View style={styles.categoryContainer}>
-          <View style={styles.categoryGrid}>
-            {ALL_CATEGORIES.map((cat) => {
-              const isSelected = selectedCategory === cat.name;
-              const isHovered = hoveredCardId === cat.id;
-
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} 
+          style={styles.listsScrollRow}>
+            {lists.map((list) => {
+              const isActive = list.id === activeListId;
               return (
                 <Pressable
-                  key={cat.id}
-                  style={[
-                    styles.categoryCard, 
-                    { width: cardWidthPercentage as any },
-                    isSelected && styles.selectedCategoryCard,
-                    isHovered && styles.hoveredCategoryCard,
-                  ]}
-                  onHoverIn={() => setHoveredCardId(cat.id)}
-                  onHoverOut={() => setHoveredCardId(null)}
-                  onPress={() => handleCategoryPress(cat)}
+                  key={list.id}
+                  style={[styles.listPill, isActive && styles.listPillActive]}
+                  onPress={() => setActiveListId(list.id)}
                 >
-                  <ImageBackground 
-                    source={cat.image} 
-                    style={styles.categoryBgImage} 
-                    imageStyle={styles.categoryImageStyle}
-                  >
-                    <View style={[styles.categoryOverlay, isHovered && styles.categoryOverlayHover]}>
-                      <View style={styles.countBadge}>
-                        <Text style={styles.countText}>{cat.count}</Text>
-                      </View>
-
-                      <View style={styles.categoryInfo}>
-                        <Text style={[styles.categoryText, isHovered && styles.categoryTextHover]} numberOfLines={1}>
-                          {cat.name}
-                        </Text>
-                        <View style={styles.browseRow}>
-                          <Text style={styles.browseText}>Browse items</Text>
-                          <Ionicons 
-                            name="chevron-forward" 
-                            size={12} 
-                            color="#FDE68A" 
-                            style={[styles.chevronIcon, isHovered && styles.chevronIconHover]} 
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  </ImageBackground>
+                  {/* <Ionicons 
+                    name={isActive ? "folder-open" : "folder-outline"} 
+                    size={14} 
+                    color={isActive ? "#FFFFFF" : "#4B5563"} 
+                    style={{ marginRight: 6 }}
+                  /> */}
+                  <Text style={[styles.listPillText, isActive && styles.listPillTextActive]}>
+                    {list.name} ({list.items.length})
+                  </Text>
+                  
+                  {lists.length > 1 && (
+                    <Pressable 
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteList(list.id);
+                      }}
+                      style={styles.deleteListIcon}
+                    >
+                      <Ionicons name="close-circle" size={14} color={isActive ? "#FDE68A" : "#9CA3AF"} />
+                    </Pressable>
+                  )}
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
 
-        {/* Featured Products Section Header */}
-        <View style={styles.sectionHeaderRow}>
-          <View>
-            <Text style={styles.sectionTitle}>Featured Products</Text>
-            <Text style={styles.sectionSubtitle}>Handpicked top quality tech & gear</Text>
+        {/* === Progress Card & Trigger to open Add Item Modal */}
+        <View style={styles.progressCardContainer}>
+          <View style={styles.progressCard}>
+            <View style={styles.progressInfo}>
+              <Text style={styles.selectedListTitle}>{activeList.name}</Text>
+              <Text style={styles.progressCount}>{completedCount} of {totalCount} items purchased</Text>
+            </View>
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{progressPercent}%</Text>
+            </View>
           </View>
-          <Pressable onPress={() => router.push('/product/products' as any)} style={styles.seeAllButton}>
-            <Text style={styles.seeAllText}>See all</Text>
-            <Ionicons name="arrow-forward" size={13} color="#E59400" />
+
+          <Pressable 
+            style={styles.openModalButton} 
+            onPress={() => setAddItemModalVisible(true)}
+          >
+            {/* <Ionicons name="add-circle" size={20} color="#FFFFFF" style={{ marginRight: 6 }} /> */}
+            <Text style={styles.openModalButtonText}>Add New Item</Text>
           </Pressable>
         </View>
 
-        {/* Featured Products Horizontal Scroll with Hover Scrollbar Effect */}
-        {/* <View 
-      
-          onHoverIn={() => setIsFeaturedHovered(true)}
-          onHoverOut={() => setIsFeaturedHovered(false)}
-          style={styles.horizontalScrollWrapper}
-        >
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={true} 
-            style={[
-              styles.horizontalScroll,
-              {
-                ...( {
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: isFeaturedHovered ? '#E59400 transparent' : 'transparent transparent',
-                } as any),
-              }
-            ]} 
-            contentContainerStyle={{ paddingBottom: 12 }}
-          >
-            {FEATURED_PRODUCTS.map((item) => (
-              <Pressable 
-                key={item.id} 
-                style={styles.productCard}
-                onPress={() => router.push('/product/products' as any)}
-              >
-                <View style={styles.productTagBadge}>
-                  <Text style={styles.productTagText}>{item.tag}</Text>
-                </View>
+        {/* === Items List (Responsive Grid for Web) */}
+        <View style={styles.listSection}>
+          <Text style={styles.formSectionTitle}>Items in this List ({filteredItems.length})</Text>
 
-                <View style={styles.productImagePlaceholder}>
-                  <Image source={item.image} style={styles.productImage} resizeMode="cover" />
-                </View>
+          {filteredItems.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="cart-outline" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyText}>
+                {searchQuery ? 'No matching items found.' : 'This list is currently empty.'}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.gridContainer}>
+              {filteredItems.map((item) => {
+                // Determine card width based on screen width
+                let cardWidth = '100%'; // Mobile default (1 per row)
+                if (width >= 1024) {
+                  cardWidth = '32%'; // 3 items per row on wider screens
+                } else if (width >= 768) {
+                  cardWidth = '48%'; // 2 items per row on tablets / smaller web screens
+                }
 
-                <View style={styles.productMetaRow}>
-                  <Text numberOfLines={1} style={styles.productName}>{item.name}</Text>
-                  <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={11} color="#F59E0B" />
-                    <Text style={styles.ratingText}>{item.rating}</Text>
-                  </View>
-                </View>
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[
+                      styles.todoCard, 
+                      { width: cardWidth as any },
+                      item.completed && styles.todoCardCompleted
+                    ]}
+                    onPress={() => handleToggleItem(item.id)}
+                  >
+                    {/* Checkbox */}
+                    <View style={[styles.checkbox, item.completed && styles.checkboxChecked]}>
+                      {item.completed && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                    </View>
 
-                <View style={styles.productFooterRow}>
-                  <Text style={styles.productPrice}>{item.price}</Text>
-                  <View style={styles.quickAddButton}>
-                    <Ionicons name="cart-outline" size={14} color="#FFFFFF" />
-                  </View>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View> */}
+                    {/* Product Thumbnail */}
+                    <Image source={{ uri: item.image }} style={styles.productThumbnail} resizeMode="cover" />
 
-{/* Featured Products Horizontal Scroll with Hover Scrollbar Effect */}
-        <Pressable 
-          onHoverIn={() => setIsFeaturedHovered(true)}
-          onHoverOut={() => setIsFeaturedHovered(false)}
-          style={styles.horizontalScrollWrapper}
-        >
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={true} 
-            style={[
-              styles.horizontalScroll,
-              {
-                ...( {
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: isFeaturedHovered ? '#E59400 transparent' : 'transparent transparent',
-                } as any),
-              }
-            ]} 
-            contentContainerStyle={{ paddingBottom: 12 }}
-          >
-            {FEATURED_PRODUCTS.map((item) => (
-              <Pressable 
-                key={item.id} 
-                style={styles.productCard}
-                onPress={() => router.push('/product/products' as any)}
-              >
-                <View style={styles.productTagBadge}>
-                  <Text style={styles.productTagText}>{item.tag}</Text>
-                </View>
+                    {/* Item Details */}
+                    <View style={styles.itemDetails}>
+                      <Text 
+                        style={[styles.itemName, item.completed && styles.itemNameCompleted]} 
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                      <View style={styles.itemMetaRow}>
+                        <Text style={styles.itemCategory}>{item.category}</Text>
+                        <Text style={styles.itemPrice}>{item.price}</Text>
+                      </View>
+                    </View>
 
-                <View style={styles.productImagePlaceholder}>
-                  <Image source={item.image} style={styles.productImage} resizeMode="cover" />
-                </View>
-
-                <View style={styles.productMetaRow}>
-                  <Text numberOfLines={1} style={styles.productName}>{item.name}</Text>
-                  <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={11} color="#F59E0B" />
-                    <Text style={styles.ratingText}>{item.rating}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.productFooterRow}>
-                  <Text style={styles.productPrice}>{item.price}</Text>
-                  <View style={styles.quickAddButton}>
-                    <Ionicons name="cart-outline" size={14} color="#FFFFFF" />
-                  </View>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </Pressable>
-        
+                    {/* Delete Button */}
+                    <Pressable 
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteItem(item.id);
+                      }} 
+                      style={styles.deleteButton}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#9CA3AF" />
+                    </Pressable>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </View>
       </ScrollView>
-    </View>
+
+      {/* === Add Item Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={addItemModalVisible}
+        onRequestClose={() => setAddItemModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeaderTitle}>Add Item to "{activeList.name}"</Text>
+              <Pressable onPress={() => setAddItemModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#111827" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputSubLabel}>Product Name *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Mechanical Keyboard"
+                placeholderTextColor="#9CA3AF"
+                value={newItemName}
+                onChangeText={setNewItemName}
+              />
+
+              <Text style={styles.inputSubLabel}>Estimated Price</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. 1299"
+                placeholderTextColor="#9CA3AF"
+                value={newItemPrice}
+                onChangeText={setNewItemPrice}
+                keyboardType="decimal-pad"
+              />
+
+              {/* <Text style={styles.inputSubLabel}>Category</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Computers, Groceries"
+                placeholderTextColor="#9CA3AF"
+                value={newItemCategory}
+                onChangeText={setNewItemCategory}
+              /> */}
+
+              <Text style={styles.inputSubLabel}>Attach Product Image</Text>
+              <View style={styles.imageActionRow}>
+                <Pressable style={styles.imageActionButton1} onPress={handleTakePhoto}>
+                  <Ionicons name="camera-outline" size={18} color="#D97706" />
+                  <Text style={styles.imageActionText}>Take Photo</Text>
+                </Pressable>
+
+                <Pressable style={styles.imageActionButton2} onPress={handlePickImage}>
+                  <Ionicons name="image-outline" size={18} color="#D97706" />
+                  <Text style={styles.imageActionText}>Upload Image</Text>
+                </Pressable>
+              </View>
+
+              {/* <View style={styles.imageActionRow}>
+                <Pressable style={styles.imageActionButton} onPress={handleTakePhoto}>
+                  <Ionicons name="camera-outline" size={18} color="#D97706" />
+                  <Text style={styles.imageActionText}>Take Photo</Text>
+                </Pressable>
+
+                <Pressable style={styles.imageActionButton} onPress={handlePickImage}>
+                  <Ionicons name="image-outline" size={18} color="#D97706" />
+                  <Text style={styles.imageActionText}>Upload Image</Text>
+                </Pressable>
+              </View> */}
+
+              {newItemImage !== '' && (
+                <View style={styles.previewContainer}>
+                  <Image source={{ uri: newItemImage }} style={styles.photoPreview} resizeMode="cover" />
+                  <View style={styles.previewMeta}>
+                    <Text style={styles.previewLabel}>Image attached successfully</Text>
+                    <Pressable onPress={() => setNewItemImage('')}>
+                      <Text style={styles.removePhotoText}>Remove</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.modalFooterButtons}>
+                {/* <Pressable 
+                  style={styles.modalCancelButton} 
+                  onPress={() => setAddItemModalVisible(false)}
+                >
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                </Pressable> */}
+
+                <Pressable style={styles.addButton} onPress={handleAddItem}>
+                  <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.addButtonText}>Save Item</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+    </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  // outerContainer: {
+  //   flex: 1,
+  //   backgroundColor: '#F9FAFB',
+  //   // padding: 20,
+  //   paddingHorizontal: 20,
+
+  //   // paddingTop: 40, 
+  //   // marginTop: 20, 
+  // },
+  // scrollContent: {
+  //   paddingBottom: 40,
+  // },
+
+  // === LAYOUT 
+  outerContainer: GlobalStyles.mainContainer, 
+
+  scrollContent: GlobalStyles.scrollContent,  
+
+  // --- Header
+  headerContainer: GlobalStyles.headerContainer, 
+  // headerContainer: { },  
+
+   // === HEADER ===
+  // headerContainer: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'baseline',
+  //   paddingTop: 10,
+
+  // },
+  // headerContainer: {
+    // flexDirection: 'row',
+    // justifyContent: 'space-between',
+    // alignItems: 'center',
+    // marginBottom: 20,
+    // paddingTop: 50,
+    // paddingBottom: 6,
+  // },
+
+
+  // headerTitle: {
+  //   // fontSize: 34,
+  //   fontSize: 42,
+
+  //   fontWeight: '700',
+  //   // fontFamily: 'serif', 
+  //   color: '#111827',
+  //   letterSpacing: -1, 
+
+  // },
+
+  headerTitle: GlobalStyles.pageHeading, 
+
+  headerSubtitle: GlobalStyles.pageSubheading, 
+
+  // -------------------------------------------
+
+  // headerSubtitle: {
+  //   fontSize: 14,
+  //   color: '#6B7280',
+  //   marginTop: 4,
+  // },
+  backButton: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#FEF3C7',
+  },
+
+
+  // --- search 
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 20,
+    // maxWidth: 400,
+
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+    padding: 0,
+    // @ts-ignore
+    outlineStyle: 'none',
+  } as any,
+
+
+  savedListsSection: {
+    // marginBottom: 20,
+    marginBottom: 50,
+    marginTop: 30,
+    // margin: 10, 
+    // backgroundColor: 'rgba(255, 204, 128, 0.74)',
+    padding: 20,  
+
+     boxShadow: "0px 6px 6px rgba(0, 0, 0, 0.1)",
+    // elevation: 5, 
+    // elevation: 1, 
+
+    borderRadius: 10, 
+    // borderColor: 'rgb(141, 141, 141)', 
+    // borderWidth: 1, 
+  },
+  savedListsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    // padding: 20,  
+
+  },
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 10, 
+  },
+  newListTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  newListTriggerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#D97706',
+    marginLeft: 4,
+  },
+  newListForm: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    // margin: 0,
+  },
+  createListButton: {
+    // backgroundColor: '#E59400',
+    backgroundColor: '#1aaa00',
+
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    height: 46,
+  },
+  createListButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  listsScrollRow: {
+    flexDirection: 'row',
+    padding: 10, 
+  },
+  listPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginRight: 8,
+  },
+  listPillActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  listPillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4B5563',
+  },
+  listPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  deleteListIcon: {
+    marginLeft: 6,
+  },
+
+  // --- progress
+  progressCardContainer: {
+    marginBottom: 20,
+    maxWidth: 500,
+    // maxWidth: 900,
+
+  },
+  progressCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 10,
+  },
+  progressInfo: {
+    flex: 1,
+  },
+  selectedListTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  progressCount: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 3,
+  },
+  badgeContainer: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeText: {
+    color: '#D97706',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+
+  // --- (modal) add a new item 
+  openModalButton: {
+    // backgroundColor: '#E59400',
+    backgroundColor: '#1aaa00',
+
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    // maxWidth: 500,
+    // maxWidth: 900,
+    // maxWidth: 200,
+  },
+  openModalButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+
+  // --- Modal Specific Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+    // padding:10, 
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    padding: 10, 
+  },
+  modalFooterButtons: {
+    flexDirection: 'row',
+    marginTop: 10,
+    gap: 10,
+  },
+  modalCancelButton: {
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 48,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+  },
+  modalCancelButtonText: {
+    color: '#4B5563',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  textInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 46,
+    fontSize: 14,
+    color: '#111827',
+    marginBottom: 12,
+    // margin: 10, 
+    marginHorizontal: 10, 
+
+  },
+  inputSubLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#4B5563',
+    marginBottom: 6,
+    marginHorizontal: 10, 
+
+  },
+
+
+  imageActionRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    marginHorizontal: 10, 
+
+  },
+  imageActionButton1: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginRight: 9,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+    imageActionButton2: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginLeft: 9,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+
+  imageActionText: {
+    color: '#D97706',
+    fontWeight: '600',
+    fontSize: 13,
+    marginLeft: 6,
+  },
+
+
+  previewContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    padding: 8,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  photoPreview: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    marginRight: 10,
+  },
+  previewMeta: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  previewLabel: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  removePhotoText: {
+    fontSize: 13,
+    color: '#EF4444',
+    fontWeight: '600',
+  },
+  addButton: {
+    backgroundColor: '#E59400',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 48,
+    borderRadius: 10,
+    flex: 1,
+    marginHorizontal: 10, 
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  // --- list of items 
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12, // Spacing between grid items
+  },
+  listSection: {
+    marginTop: 4,
+    // maxWidth: 400,
+  },
+  formSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  todoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  todoCardCompleted: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  productThumbnail: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#E5E7EB',
+  },
+  itemDetails: {
+    flex: 1,
+  },
+  itemName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  itemNameCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#9CA3AF',
+  },
+  itemMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+  },
+  itemCategory: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginRight: 10,
+  },
+  itemPrice: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#D97706',
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+
+
+});

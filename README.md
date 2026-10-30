@@ -1,7 +1,7 @@
 # Shopping List
 - Started: 2026-10-26
-- Updated: 2026-10-26
-- Version: 0.1
+- Updated: 2026-10-27
+- Version: 0.2.1
 - Status: work-in-progress
 ---
 

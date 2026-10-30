@@ -4,18 +4,33 @@ import { StyleSheet } from "react-native";
 
 export const stylesLayout = StyleSheet.create({
   // === TOP NAVBAR ===
+  // mobileTopBar: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   backgroundColor: "#1aaa00",
+  //   // backgroundColor: "#E59400",
+
+  //   paddingHorizontal: 20,
+  //   paddingBottom: 12,
+  //   zIndex: 100,
+  //   // boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+  //   // elevation: 5, 
+  //   // margin:0, 
+  // },
+
   mobileTopBar: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#E59400",
+    backgroundColor: "#1aaa00", 
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 10,
     zIndex: 100,
-    boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
-    elevation: 5, 
   },
+
   topBarDefaultContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -33,6 +48,9 @@ export const stylesLayout = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     color: "#FFFFFF",
+    paddingBottom: 10,
+    paddingTop: 20, 
+
   },
   topBarIconsRow: {
     flexDirection: "row",

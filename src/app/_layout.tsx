@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, ThemeProvider, DarkTheme, DefaultTheme, useRouter, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -17,10 +17,12 @@ import {
   MaterialCommunityIcons,
   Octicons,
 } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
 // ----------------------------------
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { stylesLayout as styles } from '../_layout.styles';
+// import '@/global.css';
 // ----------------------------------
 
 
@@ -97,12 +99,12 @@ export default function Layout() {
   const pathname = usePathname();
 
   const isAboutPage = pathname === '/landing';
-  // const islandingPage = pathname === '/landing';
+  const islandingPage = pathname === '/landing';
 
-  const isLoginScreen = pathname === '/login';
-  const isLoginScreen1 = pathname === '/login1';
-  const isSignUpScreen = pathname === '/signup';
-  const isForgotPassword = pathname === '/forgot-password'
+  // const isLoginScreen = pathname === '/login';
+  // const isLoginScreen1 = pathname === '/login1';
+  // const isSignUpScreen = pathname === '/signup';
+  // const isForgotPassword = pathname === '/forgot-password'
 
   const isWeb = Platform.OS === 'web';
   const isDesktop = isWeb && width >= 768;
@@ -118,26 +120,51 @@ export default function Layout() {
 
   // Sidebar items for desktop web navigation
   const sidebarNavItems = [
-    { label: 'Home', path: '/', icon: <Ionicons name="home-outline" size={24} color="white" /> },
-    { label: 'Shop', path: '/shop', icon: <Ionicons name="bag-outline" size={24} color="white" /> },
+    { label: 'Home', path: '/', icon: <Ionicons name="bag-outline" size={24} color="white" /> },
+    // { label: 'Shop', path: '/shopping', icon: <Ionicons name="bag-outline" size={24} color="white" /> },
+    // { label: 'Notes', path: '/notes', icon: <Ionicons name="document-outline" size={24} color="white" /> },
+    { label: 'Notes', path: '/notes', icon: <Ionicons name="document-text-outline" size={24} color="white" /> },
+    { label: 'Search', path: '/settings', icon: <Ionicons name="settings-outline" size={24} color="white" /> },
 
-    { label: 'Search', path: '/search', icon: <Ionicons name="search-outline" size={24} color="white" /> },
     // { label: 'Stores', path: '/stores', icon: <Ionicons name="location-outline" size={24} color="white" /> },
     // { label: 'Cart', path: '/cart', icon: <Ionicons name="cart-outline" size={24} color="white" /> },
     // { label: 'Sell', path: '/sell', icon: <MaterialCommunityIcons name="cash-multiple" size={24} color="white" /> },
     // { label: 'Account', path: '/account', icon: <Ionicons name="person-circle-outline" size={24} color="white" /> },
   ];
 
+
+  // const [loaded, error] = useFonts({
+  //   'Caveat': 'https://fonts.gstatic.com/s/caveat/v18/WnznhCkcaT3tsflHW5orcg.woff2',
+  // });
+
+  const [loaded, error] = useFonts({
+    // Use a standard .ttf format compatible with both native and web loader
+    'Caveat': 'https://github.com/google/fonts/raw/main/ofl/caveat/Caveat[wght].ttf',
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
+
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
+      {/* <AnimatedSplashOverlay /> */}
+
+
 
       <View style={{ flex: 1, width: '100%', height: '100%' }}>
         
-        {/* Sticky Mobile App Top Header (Native app only) */}
+        {/* === Sticky Mobile App Top Header (Native app only) */}
         {isMobileApp && (
           <View style={[styles.mobileTopBar, { paddingTop: Math.max(insets.top, 12) }]}>
-            {isSearching ? (
+            {/* {isSearching ? (
               <View style={styles.searchBarActiveContainer}>
                 <TextInput
                   placeholder="Search products..."
@@ -156,37 +183,44 @@ export default function Layout() {
                   <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-            ) : (
+            ) : ( */}
               <View style={styles.topBarDefaultContainer}>
                 <View>
-                  <Text style={styles.brandSub}>The</Text>
-                  <Text style={styles.brandMain}>PawnShop</Text>
+                  {/* <Text style={styles.brandSub}>The</Text>
+                  <Text style={styles.brandMain}>PawnShop</Text> */}
+
+                     {/* <Text style={styles.brandSub}>Sharp Shopper</Text> */}
+                     <Text style={styles.brandMain}>Sharp Shopper</Text>
                 </View>
 
                 <View style={styles.topBarIconsRow}>
                   <TouchableOpacity
-                    onPress={() => setIsSearching(true)}
+                    // onPress={() => setIsSearching(true)}
+                     onPress={() => router.push('/settings' as any)}
                     style={styles.iconButton}
                   >
-                    <Ionicons name="search-outline" size={24} color="white" />
+                    <Ionicons name="settings-outline" size={24} color="white" />
                   </TouchableOpacity>
 
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     onPress={() => router.push('/cart' as any)}
                     style={styles.iconButton}
                   >
                     <Ionicons name="cart-outline" size={24} color="white" />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               </View>
-            )}
+            {/* )} */}
           </View>
         )}
 
         {/* Web Mobile Top Bar */}
-        {isWebMobile && !isAboutPage && !isLoginScreen && !isLoginScreen1 && !isSignUpScreen && !isForgotPassword && (
+        {isWebMobile && !islandingPage
+        // !isAboutPage && !isLoginScreen && !isLoginScreen1 && !isSignUpScreen && !isForgotPassword 
+        && (
           <View style={{ backgroundColor: '#000000', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, zIndex: 50 }}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 18 }}>The PawnShop</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 18 }}>Sharp Shopper</Text>
+
             <TouchableOpacity onPress={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ padding: 4 }}>
               <Ionicons name={mobileMenuOpen ? 'close' : 'menu'} size={28} color="white" />
             </TouchableOpacity>
@@ -211,7 +245,9 @@ export default function Layout() {
 
         <View style={{ flex: 1, flexDirection: 'row', width: '100%', height: '100%', backgroundColor: '#E59400' }}>
           {/* Desktop Web Sidebar */}
-          {isDesktop && !isAboutPage && !isLoginScreen && !isLoginScreen1 && !isSignUpScreen && !isForgotPassword && (
+          {isDesktop && !islandingPage
+          // && !isAboutPage && !isLoginScreen && !isLoginScreen1 && !isSignUpScreen && !isForgotPassword 
+          && (
             <View
               style={{
                 width: 76,
@@ -255,7 +291,72 @@ export default function Layout() {
           {/* === BOTTOM NAVBAR FOR MOBILE APP VERSION === */}
           {/* Screen Content Wrapper with 4 Main Tabs */}
           <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#E59400' }}>
-            <Tabs
+
+{/* --- newer */}
+{/* <Tabs
+              screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: '#FFFFFF',
+                tabBarInactiveTintColor: '#FFEECB',
+                // Enable swipe gestures between tabs on mobile
+                // @ts-ignore - native tab swipe configuration
+                swipeEnabled: true,
+                animationEnabled: true,
+                tabBarStyle: isWeb
+                  ? { display: 'none' }
+                  : {
+                      backgroundColor: '#0e0900',
+                      borderTopWidth: 0,
+                      height: totalBarHeight,
+                      paddingBottom: bottomPadding,
+                      paddingTop: 8,
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      elevation: 8,
+                    },
+                sceneStyle: {
+                  backgroundColor: '#E59400',
+                  paddingTop: isMobileApp ? 65 : 0,
+                  paddingBottom: isWeb ? 0 : totalBarHeight,
+                },
+              }}
+            > */}
+
+
+
+<Tabs
+              screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: '#FFFFFF',
+                tabBarInactiveTintColor: '#FFEECB',
+                tabBarStyle: isWeb
+                  ? { display: 'none' }
+                  : {
+                      backgroundColor: '#0e0900',
+                      borderTopWidth: 0,
+                      height: totalBarHeight,
+                      paddingBottom: bottomPadding,
+                      paddingTop: 8,
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      elevation: 8,
+                    },
+                sceneStyle: {
+                  backgroundColor: '#E59400',
+                  paddingTop: isMobileApp ? 65 : 0,
+                  // paddingBottom: 0, // 🚀 Changed from totalBarHeight to 0 to remove the white gap
+                  paddingBottom: isWeb ? 0 : totalBarHeight,
+                
+                },
+              }}
+            >
+{/* --- */}
+
+            {/* <Tabs
               screenOptions={{
                 headerShown: false,
                 tabBarActiveTintColor: '#FFFFFF',
@@ -278,30 +379,13 @@ export default function Layout() {
                   backgroundColor: '#E59400',
                   paddingTop: isMobileApp ? 65 : 0,
                   paddingBottom: isWeb ? 0 : totalBarHeight,
+                  // paddingBottom: 0, 
                 },
               }}
-            >
-              <Tabs.Screen
-                name="(tabs)/index"
-                options={{
-                  title: 'Home',
-                  tabBarIcon: ({ color }) => (
-                    <Ionicons name="home-outline" size={24} color={color} />
-                  ),
-                }}
-              />
-
-      {/* <Tabs.Screen
-                name="(tabs)/search"
-                options={{
-                  title: 'Search',
-                  tabBarIcon: ({ color }) => (
-                    <Ionicons name="search" size={26} color={color} />
-                  ),
-                }}
-              /> */}
-
-                   <Tabs.Screen
+            > */}
+             
+             
+                   {/* <Tabs.Screen
                 name="(tabs)/shopping"
                 options={{
                   title: 'Shop',
@@ -309,40 +393,31 @@ export default function Layout() {
                     <Ionicons name="bag-outline" size={24} color={color} />
                   ),
                 }}
-              />
-              {/* <Tabs.Screen
-                name="sell"
-                options={{
-                  title: 'Sell',
-                  tabBarIcon: ({ color }) => (
-                    <MaterialCommunityIcons name="cash-multiple" size={26} color={color} />
-                  ),
-                }}
-              />
-              <Tabs.Screen
-                name="stores"
-                options={{
-                  title: 'Stores',
-                  tabBarIcon: ({ color }) => (
-                    <Ionicons name="location-outline" size={24} color={color} />
-                  ),
-                }}
-              />
-              <Tabs.Screen
-                name="account"
-                options={{
-                  title: 'Account',
-                  tabBarIcon: ({ color }) => (
-                    <Ionicons name="person-circle-outline" size={26} color={color} />
-                  ),
-                }}
               /> */}
 
-         
+              <Tabs.Screen
+                name="(tabs)/index"
+                options={{
+                  title: 'Shop',
+                  tabBarIcon: ({ color }) => (
+                    <Ionicons name="bag-outline" size={24} color={color} />
+                  ),
+                }}
+              />
+
+            <Tabs.Screen
+                name="(tabs)/notes"
+                options={{
+                  title: 'Notes',
+                  tabBarIcon: ({ color }) => (
+                    <Ionicons name="document-text-outline" size={24} color={color} />
+                  ),
+                }}
+              />
           
-            {/* Hidden auxiliary screens so they don't generate bottom tab buttons */}
+            {/* === Hidden auxiliary screens so they don't generate bottom tab buttons */}
               <Tabs.Screen name="landing" options={{ href: null }} />
-              <Tabs.Screen name="(tabs)/search" options={{ href: null }} />
+              <Tabs.Screen name="settings" options={{ href: null }} />
 
               {/* <Tabs.Screen name="search" options={{ href: null }} /> */}
               {/* <Tabs.Screen name="search1" options={{ href: null }} />
