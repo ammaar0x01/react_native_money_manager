@@ -1,11 +1,15 @@
 {
     "app_name": "Money Manager", 
-    "app_type": "cross-platform; (Web-app and Mobile-app)",
+    "app_type": "cross-platform; (Web-app and Android app)",
     
     "started": "2026-10-29",
-    "updated": "2026-10-29",
+    "updated": "2026-10-31",
     "status": "work-in-progress",
     "version": "0.1", 
+    "notes": [
+        "Expo version: 57", 
+        "Sitemap URL: http://localhost:8081/_sitemap"
+    ], 
 
     "technologies_used": [
         "react native", 

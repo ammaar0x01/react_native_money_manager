@@ -404,16 +404,18 @@ export default function ExpensesView() {
           {/* Header */}
           <View style={styles.headerContainer}>
             <View style={styles.headerTextGroup}>
-              <Text style={styles.headerTitle}>Expenses</Text>
+              {/* <Text style={styles.headerTitle}>Expenses</Text> */}
+              <Text style={styles.headerTitle}>Summary</Text>
+
               <Text style={styles.headerSubtitle}>
                 Track where your money goes, one expense at a time.
               </Text>
             </View>
 
-            <Pressable style={styles.headerAddButton} onPress={openAddModal}>
+            {/* <Pressable style={styles.headerAddButton} onPress={openAddModal}>
               <Ionicons name="add" size={20} color="#FFFFFF" />
               <Text style={styles.headerAddButtonText}>Add</Text>
-            </Pressable>
+            </Pressable> */}
           </View>
 
           {/* Summary */}

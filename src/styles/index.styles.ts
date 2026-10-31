@@ -20,8 +20,9 @@ export const stylesIndex = StyleSheet.create({
   headerContainer: {
     ...GlobalStyles.headerContainer,
     alignItems: "center",
-    marginBottom: 8,
+    // marginBottom: 8,
   } as any,
+
   headerTextGroup: {
     flex: 1,
     paddingRight: 12,
@@ -48,7 +49,8 @@ export const stylesIndex = StyleSheet.create({
     backgroundColor: "#0B1F16",
     borderRadius: 20,
     padding: 20,
-    marginTop: 20,
+    // marginTop: 20,
+    marginTop: 30,
     marginBottom: 20,
   },
   summaryTopRow: {

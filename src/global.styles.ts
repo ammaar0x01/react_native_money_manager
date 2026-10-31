@@ -30,7 +30,9 @@ export const GlobalStyles = {
   },
   scrollContent: {
     paddingBottom: 40,
-    paddingTop: 40,
+    // paddingTop: 40,
+
+    paddingTop: 20,
   },
   contentWrapper: {
     width: "100%",
@@ -66,7 +68,10 @@ export const GlobalStyles = {
   pageSubheading: {
     fontSize: 13,
     color: pageSubheadingColor, 
+
     // marginTop: 4,
-    marginBottom: 20, 
+    // marginBottom: 20, 
+    marginBottom: 0, 
+
   } as const,
 };

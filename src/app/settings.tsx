@@ -33,6 +33,7 @@ import {
   type ImportData,
 } from '@/utils/dataExport';
 import { GlobalStyles } from '@/global.styles';
+import { router } from 'expo-router';
 
 // Expanded list of global currencies
 const ALL_CURRENCIES = [
@@ -170,7 +171,7 @@ export default function SettingsScreen() {
       profile: isRecord(parsedProfile) ? parsedProfile : null,
       firstUsed: firstUsedRaw || null,
       monthlyDummySeeded: seededRaw === 'true',
-      shoppingLists: Array.isArray(parsedShopping) ? parsedShopping : [],
+      // shoppingLists: Array.isArray(parsedShopping) ? parsedShopping : [],
       notes: Array.isArray(parsedNotes) ? parsedNotes : [],
     };
   };
@@ -267,7 +268,7 @@ export default function SettingsScreen() {
     if (data.monthlyBudget !== undefined) parts.push('the monthly budget');
     if (data.currency !== undefined) parts.push('the currency');
     if (data.profile !== undefined) parts.push('your profile');
-    if (data.shoppingLists) parts.push(`${data.shoppingLists.length} shopping lists`);
+    // if (data.shoppingLists) parts.push(`${data.shoppingLists.length} shopping lists`);
     if (data.notes) parts.push(`${data.notes.length} notes`);
 
     const message = `This will replace your current ${
@@ -358,9 +359,9 @@ export default function SettingsScreen() {
         writes.push([STORAGE_KEYS.firstUsed, data.firstUsed]);
       }
 
-      if (data.shoppingLists !== undefined) {
-        writes.push([STORAGE_KEYS.shoppingLists, JSON.stringify(data.shoppingLists)]);
-      }
+      // if (data.shoppingLists !== undefined) {
+      //   writes.push([STORAGE_KEYS.shoppingLists, JSON.stringify(data.shoppingLists)]);
+      // }
 
       if (data.notes !== undefined) {
         writes.push([STORAGE_KEYS.notes, JSON.stringify(data.notes)]);
@@ -441,6 +442,13 @@ export default function SettingsScreen() {
           Export a complete JSON backup you can import later, or download your expenses as a
           CSV or Excel spreadsheet. Only JSON backups can be imported.
         </Text>
+
+<Pressable 
+  onPress={() => router.push('/landing?scrollTo=import')}
+  style={styles.button}
+>
+  <Text style={styles.buttonText}>JSON Import Guide</Text>
+</Pressable>
 
         <View style={styles.actionButtonsRow}>
           <Pressable
@@ -670,6 +678,33 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ---- newer
+  // --- BUTTON STYLE
+  button: {
+    backgroundColor: '#111827',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    marginBottom: 15, 
+
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start', // Keeps the button sized to its content rather than stretching 100% width
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  // ---------------------------
+
+
   // === LAYOUT
   container: GlobalStyles.mainContainer,
   scrollContent: GlobalStyles.scrollContent,

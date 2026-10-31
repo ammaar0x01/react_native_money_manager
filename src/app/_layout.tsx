@@ -27,7 +27,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { STORAGE_KEYS } from "@/constants/storage";
 import { stylesLayout as styles } from "../_layout.styles";
-// import '@/global.css';
+import { Analytics } from '@vercel/analytics/react';
 // ----------------------------------
 
 SplashScreen.preventAutoHideAsync();
@@ -118,8 +118,9 @@ export default function Layout() {
   const isMobileApp = !isWeb; // Native iOS / Android app version
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const bottomPadding = isWeb ? 8 : Math.max(insets.bottom, 12);
   const totalBarHeight = 60 + bottomPadding;
@@ -146,7 +147,9 @@ export default function Layout() {
   // --- Sidebar items for desktop web navigation
   const sidebarNavItems = [
     {
-      label: "Expenses",
+      // label: "Expenses",
+      label: "Summary",
+
       path: "/",
       icon: <Ionicons name="wallet-outline" size={24} color="white" />,
     },
@@ -176,45 +179,12 @@ export default function Layout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
+<Analytics />
 
-      <View style={{ flex: 1, width: "100%", height: "100%" }}>
-        {/* === Sticky Mobile App Top Header (Native app only) */}
-        {isMobileApp && (
-          <View
-            style={[
-              styles.mobileTopBar,
-              { paddingTop: Math.max(insets.top, 12) },
-            ]}
-          >
-            <View style={styles.topBarDefaultContainer}>
-              <View>
-                {/* <Text style={styles.brandSub}>The</Text>
-                  <Text style={styles.brandMain}>PawnShop</Text> */}
-
-                {/* <Text style={styles.brandSub}>Money Manager</Text> */}
-                <Text style={styles.brandMain}>Money Manager</Text>
-              </View>
-
-              <View style={styles.topBarIconsRow}>
-                <TouchableOpacity
-                  // onPress={() => setIsSearching(true)}
-                  onPress={() => router.push("/settings" as any)}
-                  style={styles.iconButton}
-                >
-                  <Ionicons name="settings-outline" size={24} color="white" />
-                </TouchableOpacity>
-
-                {/* <TouchableOpacity
-                    onPress={() => router.push('/cart' as any)}
-                    style={styles.iconButton}
-                  >
-                    <Ionicons name="cart-outline" size={24} color="white" />
-                  </TouchableOpacity> */}
-              </View>
-            </View>
-            {/* )} */}
-          </View>
-        )}
+      <View style={{ flex: 1, width: "100%", height: "100%", backgroundColor: '#000000' }}>
+      
+        {/* Phone App Top Header (Native app only) */}
+       {/* ... */}
 
         {/* Web Mobile Top Bar */}
         {isWebMobile && !islandingPage && (
@@ -317,7 +287,7 @@ export default function Layout() {
             flexDirection: "row",
             width: "100%",
             height: "100%",
-            backgroundColor: "#E59400",
+            // backgroundColor: "#E59400",
           }}
         >
           {/* Desktop Web Sidebar */}
@@ -369,14 +339,13 @@ export default function Layout() {
             </View>
           )}
 
-          {/* === BOTTOM NAVBAR FOR MOBILE APP VERSION === */}
-          {/* Screen Content Wrapper with 4 Main Tabs */}
+          {/* PHONE APP BOTTOM NAVBAR */}
           <View
             style={{
               flex: 1,
               width: "100%",
               height: "100%",
-              backgroundColor: "#E59400",
+              // backgroundColor: "#E59400",
             }}
           >
             <Tabs
@@ -399,7 +368,7 @@ export default function Layout() {
                       elevation: 8,
                     },
                 sceneStyle: {
-                  backgroundColor: "#E59400",
+                  backgroundColor: "#0c0800",
                   paddingTop: isMobileApp ? 65 : 0,
                   // paddingBottom: 0, // 🚀 Changed from totalBarHeight to 0 to remove the white gap
                   paddingBottom: isWeb ? 0 : totalBarHeight,
@@ -409,10 +378,12 @@ export default function Layout() {
               <Tabs.Screen
                 name="(tabs)/index"
                 options={{
-                  title: "Expenses",
+                  // title: "Expenses",
+                  title: "Summary",
+
                   tabBarIcon: ({ color }) => (
-                    <Ionicons name="home-outline" size={24} color={color} />
-                    // <Ionicons name="wallet-outline" size={24} color={color} />
+                    // <Ionicons name="home-outline" size={24} color={color} />
+                    <Ionicons name="wallet-outline" size={24} color={color} />
                   ),
                 }}
               />
@@ -441,6 +412,8 @@ export default function Layout() {
                 }}
               />
 
+            
+
               <Tabs.Screen
                 name="(tabs)/profile"
                 options={{
@@ -453,11 +426,28 @@ export default function Layout() {
                     />
                   ),
                 }}
+                />
+
+                    <Tabs.Screen
+                name="settings"
+                options={{
+                  title: "Settings",
+                  tabBarIcon: ({ color }) => (
+                    <Ionicons
+                      name="settings-outline"
+                      size={24}
+                      color={color}
+                    />
+                  ),
+                }}
               />
 
               {/* === Hidden auxiliary screens so they don't generate bottom tab buttons */}
               <Tabs.Screen name="landing" options={{ href: null }} />
-              <Tabs.Screen name="settings" options={{ href: null }} />
+              {/* <Tabs.Screen name="settings" options={{ href: null }} />  */}
+
+              <Tabs.Screen name="ignore/_layout-older" options={{ href: null }} /> 
+
             </Tabs>
           </View>
         </View>

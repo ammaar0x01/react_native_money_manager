@@ -1,25 +1,22 @@
 # Money Manager
 
 - Started: 2026-10-29
-- Updated: 2026-10-30
-- Version: 0.1
+- Updated: 2026-10-31
+- Version: 1.1.0
 - Status: work-in-progress
-
 ---
+
 
 ## Notes
-
 - This app uses Expo 57
-- sitemap: http://localhost:8081/\_sitemap
+- sitemap: http://localhost:8081/_sitemap
 - Enter '192.168...' IP address to access view the web-version on any device on the same network  
    example of url: '192.168.10.138:8081'
-
 ---
 
+
 ## Screenshots
-
 Here is a quick preview of UI on the mobile app:
-
 |                       Expenses                        |                      Monthly                       |                       Notes                        |
 | :---------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
 | ![Landing Page](/public/screenshots/mobile-app1.jpeg) | ![Home View](/public/screenshots/mobile-app2.jpeg) | ![Home View](/public/screenshots/mobile-app3.jpeg) |
@@ -89,7 +86,6 @@ Different files have different naming styles
   - global.styles.ts
   - themeDefault.styles.ts
 - The '(tabs)' folder in /src/app are for the tabs in the bottom navbar for the mobile app (2-5 tabs)
-
 ---
 
 
@@ -131,4 +127,5 @@ complete production-ready web app.
 
 You can deploy this dist folder to any static hosting provider 
 like Vercel, Netlify, or GitHub Pages.
+
 ---
