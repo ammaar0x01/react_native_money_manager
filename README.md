@@ -118,7 +118,7 @@ eas build --platform ios
 
 ### Export for Web
 If you want to deploy your shopping list app as a static website, 
-Expo can bundle your code into HTML, CSS, and JS assets:
+Expo can bundle your code into HTML, CSS, and JS assets.
 
 Run the export command:npx expo export
 
